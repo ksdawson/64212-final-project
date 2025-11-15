@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="dark_rook">
+    <pose>0 0 0 0 0 0</pose>
+    <link name="link">
+      <inertial>
+        <mass>4.93021704609</mass>
+        <inertia>
+          <ixx>0.038708385852045744</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.022274652577239384</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.039049304444522405</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.1659 0.25985 0.16338</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_visual">
+        <geometry>
+          <mesh>
+            <uri>model.obj</uri>
+            <scale>0.001 0.001 0.001</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

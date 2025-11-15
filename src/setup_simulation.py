@@ -8,15 +8,26 @@ def create_scenario():
     # Get paths to assets
     current_directory = os.getcwd()
     chess_assets_directory = 'src/assets/chess'
+    furniture_assets_directory = 'src/assets/furniture'
 
-    # Get path to pieces
-    dark_pawn_path = f'{current_directory}/{chess_assets_directory}/individual_pieces/dark_pawn/model.sdf'
+    # Get table
+    table_path = f'{current_directory}/{furniture_assets_directory}/table1/model.sdf'
+
+    # Get chessboard
+    chessboard_path = f'{current_directory}/{chess_assets_directory}/chessboard/model.sdf'
+
+    # Get pieces
+    dark_pawn_path = f'{current_directory}/{chess_assets_directory}/pieces/individual_pieces/dark_pawn/model.sdf'
 
     # Create scenario
     scenario_string = f'''directives:
     - add_model:
         name: dark_pawn
         file: file://{dark_pawn_path}
+        default_free_body_pose:
+            link:
+                translation: [-0.35, 0, 0]
+                rotation: !Rpy {{ deg: [0, 0, 0] }}
     '''
 
     return scenario_string

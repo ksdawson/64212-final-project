@@ -1,0 +1,1 @@
+This requires setting up Drake to run locally. Once you've done that you can navigate to the src directory and run things like "/workspaces/code/.venv/bin/python -m assets.chess.pieces.generate_sdf"
