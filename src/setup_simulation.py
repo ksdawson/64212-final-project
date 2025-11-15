@@ -10,21 +10,21 @@ def create_scenario():
     chess_assets_directory = 'src/assets/chess'
 
     # Get path to pieces
-    dark_pawn_path = f"{current_directory}/{chess_assets_directory}/individual_pieces/dark_pawn/model.sdf"
+    dark_pawn_path = f'{current_directory}/{chess_assets_directory}/individual_pieces/dark_pawn/model.sdf'
 
     # Create scenario
-    scenario_string = f"""directives:
+    scenario_string = f'''directives:
     - add_model:
         name: dark_pawn
         file: file://{dark_pawn_path}
-    """
+    '''
 
     return scenario_string
 
 def setup_simulation():
     # Setup meshcat for visualization
     meshcat = StartMeshcat()
-    print("Click the link above to open Meshcat in your browser!")
+    print('Click the link above to open Meshcat in your browser!')
 
     # Get scenario
     scenario_string = create_scenario()

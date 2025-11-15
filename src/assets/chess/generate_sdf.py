@@ -40,9 +40,19 @@ def main():
     current_directory = os.getcwd()
     chess_assets_directory = 'src/assets/chess'
 
-    # Generate SDFs
-    pieces = ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']
+    # Chess info
     colors = ['dark', 'light']
+    pieces = ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']
+    piece_dimensions = {
+        'pawn': {'X': 136.31, 'Y': 209.78, 'Z': 136.31},
+        'rook':   {'X': 165.90, 'Y': 259.85, 'Z': 163.38},
+        'knight': {'X': 173.22, 'Y': 329.27, 'Z': 185.68},
+        'bishop': {'X': 157.10, 'Y': 357.42, 'Z': 157.09},
+        'queen':  {'X': 186.09, 'Y': 429.28, 'Z': 186.10},
+        'king':   {'X': 186.07, 'Y': 494.27, 'Z': 186.06},
+    }
+
+    # Generate SDFs
     for color in colors:
         for piece in pieces:
             # Get SDF file
