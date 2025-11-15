@@ -1,0 +1,7 @@
+The chess pieces are sourced from https://free3d.com/3d-model/another-chess-60360.html.
+This gives a pawn, king, queen, bishop, knight, and rook for both dark and light in one object.
+We want each piece in its own object, so I uploaded the object and mtl files to https://3dviewer.net/.
+It will show each individual mesh in the left-hand panel. Select one, then right click on it
+and select "Isolate mesh". Once isolated click on the export button in the task bar at the top.
+Make sure to select the file type as "Wavefront (.obj)" and select scope as "Visible Only", then
+click export and voila!
