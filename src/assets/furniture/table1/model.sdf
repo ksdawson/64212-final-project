@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <model name="chessboard">
+  <model name="table1">
     <pose>0 0 0 0 0 0</pose>
     <link name="link">
       <inertial>
-        <mass>2016.466375</mass>
+        <mass>465761.9418480001</mass>
         <inertia>
-          <ixx>3147.257196034073</ixx>
+          <ixx>4371275.963060979</ixx>
           <ixy>0.0</ixy>
           <ixz>0.0</ixz>
-          <iyy>3147.257196034073</iyy>
+          <iyy>9341531.719593244</iyy>
           <iyz>0.0</iyz>
-          <izz>6286.543972643229</izz>
+          <izz>11964297.29742983</izz>
         </inertia>
       </inertial>
       <collision name="collision">
         <geometry>
           <box>
-            <size>4.325 4.325 0.154</size>
+            <size>14.77 9.492 4.746</size>
           </box>
         </geometry>
       </collision>

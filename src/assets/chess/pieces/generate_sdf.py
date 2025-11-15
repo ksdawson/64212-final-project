@@ -53,7 +53,7 @@ def main():
         'queen':  {'X': 186.09, 'Y': 429.28, 'Z': 186.10},
         'king':   {'X': 186.07, 'Y': 494.27, 'Z': 186.06},
     }
-    scaling_factor = 1000
+    scaling_factor = 1000 # Experiment with this
 
     # Generate SDFs
     for color in colors:

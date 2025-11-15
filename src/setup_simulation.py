@@ -7,8 +7,8 @@ from manipulation.station import LoadScenario, MakeHardwareStation
 def create_scenario():
     # Get paths to assets
     current_directory = os.getcwd()
-    chess_assets_directory = 'src/assets/chess'
-    furniture_assets_directory = 'src/assets/furniture'
+    chess_assets_directory = 'assets/chess'
+    furniture_assets_directory = 'assets/furniture'
 
     # Get table
     table_path = f'{current_directory}/{furniture_assets_directory}/table1/model.sdf'
@@ -21,6 +21,21 @@ def create_scenario():
 
     # Create scenario
     scenario_string = f'''directives:
+    - add_model:
+        name: table
+        file: file://{table_path}
+    - add_weld:
+        parent: world
+        child: table::link
+        X_PC:
+            translation: [0.0, 0.0, -0.05]
+            rotation: !Rpy {{ deg: [0, 0, -90] }}
+    - add_model:
+        name: chessboard
+        file: file://{chessboard_path}
+    - add_weld:
+        parent: table::link
+        child: chessboard::link
     - add_model:
         name: dark_pawn
         file: file://{dark_pawn_path}
