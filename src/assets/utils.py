@@ -54,6 +54,11 @@ def calculate_bounding_box_from_file(filepath):
 
 def get_all_bounding_boxes():
     objects = ['./assets/chess/chessboard/model.obj', './assets/furniture/table1/model.obj', './assets/furniture/table2/model.obj']
+    for color in ['dark', 'light']:
+        for piece in ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']:
+            name = f'{color}_{piece}'
+            path = f'./assets/chess/pieces/individual_pieces/{name}/model.obj'
+            objects.append(path)
     for o in objects:
         print(o)
         min_coords, max_coords, center_coords = calculate_bounding_box_from_file(o)

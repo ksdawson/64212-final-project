@@ -19,7 +19,7 @@ base_sdf_string = '''<?xml version="1.0"?>
         </inertia>
       </inertial>
       <collision name="collision">
-        <pose>0 0 {Z_OFFSET} 0 0 0</pose>
+        <pose>{X_OFFSET} {Y_OFFSET} {Z_OFFSET} 0 0 0</pose>
         <geometry>
           <box>
             <size>{X} {Y} {Z}</size>
@@ -44,14 +44,19 @@ def main():
     chess_assets_directory = 'assets/chess'
 
     # Info
-    dim = {'X': 43.25, 'Y': 43.25, 'Z': 1.54, 'Z_OFFSET': -0.82}
+    dim = {'X': 43.25, 'Y': 43.25, 'Z': 1.54,
+      'X_OFFSET': 0.0, 'Y_OFFSET': 0.0, 'Z_OFFSET': -0.82
+    }
     scaling_factor = 100 # Experiment with this
 
     # Calculate collision box height based on mesh height
-    x, y, z, z_offset = dim['X'], dim['Y'], dim['Z'], dim['Z_OFFSET']
+    x, y, z = dim['X'], dim['Y'], dim['Z']
+    x_offset, y_offset, z_offset = dim['X_OFFSET'], dim['Y_OFFSET'], dim['Z_OFFSET']
     x /= scaling_factor
     y /= scaling_factor
     z /= scaling_factor
+    x_offset /= scaling_factor
+    y_offset /= scaling_factor
     z_offset /= scaling_factor
 
     # Scale mesh to same size as collision box
@@ -68,7 +73,8 @@ def main():
     name = 'chessboard'
     sdf_string = base_sdf_string.format(NAME=name,
         MASS=m, IXX=ixx, IYY=iyy, IZZ=izz,
-        X=x, Y=y, Z=z, Z_OFFSET=z_offset,
+        X=x, Y=y, Z=z,
+        X_OFFSET=x_offset, Y_OFFSET=y_offset, Z_OFFSET=z_offset,
         SCALE_X=scale_x, SCALE_Y=scale_y, SCALE_Z=scale_z
     )
 

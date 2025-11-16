@@ -37,6 +37,58 @@ def create_scenario():
     # Create scenario
     scenario_string = f'''directives:
     - add_model:
+        name: iiwa1
+        file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        default_joint_positions:
+            iiwa_joint_1: [-1.57]
+            iiwa_joint_2: [0.1]
+            iiwa_joint_3: [0]
+            iiwa_joint_4: [-1.2]
+            iiwa_joint_5: [0]
+            iiwa_joint_6: [ 1.6]
+            iiwa_joint_7: [0]
+    - add_weld:
+        parent: world
+        child: iiwa1::iiwa_link_0
+        X_PC:
+            translation: [0, -0.75, 0]
+            rotation: !Rpy {{ deg: [0, 0, 180] }}
+    - add_model:
+        name: wsg1
+        file: package://manipulation/hydro/schunk_wsg_50_with_tip.sdf
+    - add_weld:
+        parent: iiwa1::iiwa_link_7
+        child: wsg1::body
+        X_PC:
+            translation: [0, 0, 0.09]
+            rotation: !Rpy {{ deg: [90, 0, 90]}}
+    - add_model:
+        name: iiwa2
+        file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        default_joint_positions:
+            iiwa_joint_1: [-1.57]
+            iiwa_joint_2: [0.1]
+            iiwa_joint_3: [0]
+            iiwa_joint_4: [-1.2]
+            iiwa_joint_5: [0]
+            iiwa_joint_6: [ 1.6]
+            iiwa_joint_7: [0]
+    - add_weld:
+        parent: world
+        child: iiwa2::iiwa_link_0
+        X_PC:
+            translation: [0, 0.75, 0]
+            rotation: !Rpy {{ deg: [0, 0, 0] }}
+    - add_model:
+        name: wsg2
+        file: package://manipulation/hydro/schunk_wsg_50_with_tip.sdf
+    - add_weld:
+        parent: iiwa2::iiwa_link_7
+        child: wsg2::body
+        X_PC:
+            translation: [0, 0, 0.09]
+            rotation: !Rpy {{ deg: [90, 0, 90]}}
+    - add_model:
         name: table
         file: file://{table_path}
     - add_weld:
@@ -57,8 +109,8 @@ def create_scenario():
         file: file://{dark_pawn_path}
         default_free_body_pose:
             link:
-                translation: [0, 0, 10.0]
-                rotation: !Rpy {{ deg: [0, 0, 0] }}
+                translation: [0, 0, 0]
+                rotation: !Rpy {{ deg: [90, 0, 0] }}
 visualization:
     publish_contacts: true
     publish_proximity: true
@@ -86,6 +138,6 @@ def setup_simulation():
     # Create and run a simulator
     simulator = Simulator(diagram)
     simulator.set_target_realtime_rate(1.0)
-    simulator.AdvanceTo(10.0)
+    simulator.AdvanceTo(0.1)
 
     return diagram, simulator
