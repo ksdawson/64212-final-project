@@ -73,112 +73,224 @@ directives:
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.31100000000000005, -0.4575, 0.517262]
+                translation: [-0.29600000000000004, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_1
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.264, -0.4575, 0.517262]
+                translation: [-0.249, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_2
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.21700000000000003, -0.4575, 0.517262]
+                translation: [-0.202, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_3
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.17, -0.4575, 0.517262]
+                translation: [-0.155, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_4
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.12300000000000001, -0.4575, 0.517262]
+                translation: [-0.108, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_5
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.07600000000000001, -0.4575, 0.517262]
+                translation: [-0.061, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_6
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.028999999999999998, -0.4575, 0.517262]
+                translation: [-0.013999999999999985, -0.4225, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: dark_pawn_7
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [0.017999999999999988, -0.4575, 0.517262]
+                translation: [0.033, -0.4225, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_king_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_king/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.0892, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_queen_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_queen/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.0024500000000000077, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_bishop_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_bishop/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.09175, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_bishop_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_bishop/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.04925, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_knight_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_knight/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.17987499999999998, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_knight_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_knight/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.05512499999999999, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_rook_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_rook/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.268, -0.39899999999999997, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: dark_rook_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/dark_rook/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.061, -0.39899999999999997, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_0
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.31100000000000005, -0.37525000000000003, 0.517262]
+                translation: [-0.29600000000000004, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_1
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.264, -0.37525000000000003, 0.517262]
+                translation: [-0.249, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_2
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.21700000000000003, -0.37525000000000003, 0.517262]
+                translation: [-0.202, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_3
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.17, -0.37525000000000003, 0.517262]
+                translation: [-0.155, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_4
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.12300000000000001, -0.37525000000000003, 0.517262]
+                translation: [-0.108, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_5
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.07600000000000001, -0.37525000000000003, 0.517262]
+                translation: [-0.061, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_6
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [-0.028999999999999998, -0.37525000000000003, 0.517262]
+                translation: [-0.013999999999999985, -0.322625, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
     - add_model:
         name: light_pawn_7
         file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_pawn/model.sdf
         default_free_body_pose:
             link:
-                translation: [0.017999999999999988, -0.37525000000000003, 0.517262]
+                translation: [0.033, -0.322625, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_king_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_king/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.0892, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_queen_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_queen/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.0024500000000000077, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_bishop_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_bishop/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.09175, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_bishop_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_bishop/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.04925, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_knight_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_knight/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.17987499999999998, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_knight_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_knight/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.05512499999999999, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_rook_0
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_rook/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [0.268, -0.17575, 0.517262]
+                rotation: !Rpy { deg: [90, 0, 0] }
+    - add_model:
+        name: light_rook_1
+        file: file:///workspaces/code/src/assets/chess/pieces/individual_pieces/light_rook/model.sdf
+        default_free_body_pose:
+            link:
+                translation: [-0.061, -0.17575, 0.517262]
                 rotation: !Rpy { deg: [90, 0, 0] }
 visualization:
     publish_contacts: true

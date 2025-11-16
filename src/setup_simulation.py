@@ -96,7 +96,7 @@ def get_pieces_poses():
     piece_nums = [8, 1, 1, 2, 2, 2]
 
     # Piece poses
-    e7_x, e7_y = -0.17, -0.4575
+    e7_x, e7_y = -0.155, -0.4225
     sq_size = 0.047
     piece_poses = {}
 
@@ -109,8 +109,46 @@ def get_pieces_poses():
     piece_poses['light'] = {}
     piece_poses['light']['pawn'] = {}
     for p in range(-3, 5):
-        p2_x, p2_y = e7_x + p * sq_size, e7_y + 1.75 * sq_size
+        p2_x, p2_y = e7_x + p * sq_size, e7_y + 2.125 * sq_size
         piece_poses['light']['pawn'][p+3] = p2_x, p2_y
+
+    # Add kings
+    piece_poses['dark']['king'] = {0: (e7_x + 1.4 * sq_size, e7_y + 0.5 * sq_size)}
+    piece_poses['light']['king'] = {0: (e7_x + 1.4 * sq_size, e7_y + 5.25 * sq_size)}
+
+    # Add queens
+    piece_poses['dark']['queen'] = {0: (e7_x + 3.35 * sq_size, e7_y + 0.5 * sq_size)}
+    piece_poses['light']['queen'] = {0: (e7_x + 3.35 * sq_size, e7_y + 5.25 * sq_size)}
+
+    # Add bishops
+    piece_poses['dark']['bishop'] = {
+        0: (e7_x + 5.25 * sq_size, e7_y + 0.5 * sq_size),
+        1: (e7_x + 2.25 * sq_size, e7_y + 0.5 * sq_size)
+    }
+    piece_poses['light']['bishop'] = {
+        0: (e7_x + 5.25 * sq_size, e7_y + 5.25 * sq_size),
+        1: (e7_x + 2.25 * sq_size, e7_y + 5.25 * sq_size)
+    }
+
+    # Add knights
+    piece_poses['dark']['knight'] = {
+        0: (e7_x + 7.125 * sq_size, e7_y + 0.5 * sq_size),
+        1: (e7_x + 2.125 * sq_size, e7_y + 0.5 * sq_size),
+    }
+    piece_poses['light']['knight'] = {
+        0: (e7_x + 7.125 * sq_size, e7_y + 5.25 * sq_size),
+        1: (e7_x + 2.125 * sq_size, e7_y + 5.25 * sq_size),
+    }
+
+    # Add rooks
+    piece_poses['dark']['rook'] = {
+        0: (e7_x + 9 * sq_size, e7_y + 0.5 * sq_size),
+        1: (e7_x + 2 * sq_size, e7_y + 0.5 * sq_size)
+    }
+    piece_poses['light']['rook'] = {
+        0: (e7_x + 9 * sq_size, e7_y + 5.25 * sq_size),
+        1: (e7_x + 2 * sq_size, e7_y + 5.25 * sq_size)
+    }
 
     return piece_poses
 

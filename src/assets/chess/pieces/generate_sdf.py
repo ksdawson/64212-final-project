@@ -72,13 +72,16 @@ def main():
             'rook': {'X_OFFSET': -682.95, 'Y_OFFSET': 129.92, 'Z_OFFSET': -2211.98}
         }
     }
-    scaling_factor = 4500 # Experiment with this
+    # Experiment with these
+    pawn_scaling_factor = 5000
+    back_pieces_scaling_factor = 6500
 
     # Generate SDFs
     for color in colors:
         for piece in pieces:
             # Calculate collision box height based on mesh height
             dim = piece_dimensions[piece]
+            scaling_factor = pawn_scaling_factor if piece == 'pawn' else back_pieces_scaling_factor
             x, y, z = dim['X'], dim['Y'], dim['Z']
             x_offset, y_offset, z_offset = piece_offsets[color][piece]['X_OFFSET'], piece_offsets[color][piece]['Y_OFFSET'], piece_offsets[color][piece]['Z_OFFSET']
             x /= scaling_factor
