@@ -20,6 +20,7 @@ base_sdf_string = '''<?xml version="1.0"?>
         </inertia>
       </inertial>
       <collision name="collision">
+        <pose>0 0 {Z_OFFSET} 0 0 0</pose>
         <geometry>
           <box>
             <size>{X} {Y} {Z}</size>
@@ -45,10 +46,10 @@ def main():
 
     # Info
     dimensions = {
-        'table1': {'X': 147.70, 'Y': 94.92, 'Z': 47.46},
-        'table2': {'X': 149.17, 'Y': 149.24, 'Z': 74.61}
+        'table1': {'X': 147.70, 'Y': 94.92, 'Z': 47.46, 'Z_OFFSET': 22.46},
+        'table2': {'X': 149.17, 'Y': 149.24, 'Z': 74.61, 'Z_OFFSET': 0} # fix z offset
     }
-    scaling_factor = 10 # Experiment with this
+    scaling_factor = 100 # Experiment with this
     tables = ['table1', 'table2']
 
     for table in tables:
@@ -73,7 +74,7 @@ def main():
         name = table
         sdf_string = base_sdf_string.format(NAME=name,
             MASS=m, IXX=ixx, IYY=iyy, IZZ=izz,
-            X=x, Y=y, Z=z,
+            X=x, Y=y, Z=z, Z_OFFSET=dim['Z_OFFSET'],
             SCALE_X=scale_x, SCALE_Y=scale_y, SCALE_Z=scale_z
         )
 

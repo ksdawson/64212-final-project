@@ -1,6 +1,7 @@
 import os
 from pydrake.all import (
-    DiagramBuilder, StartMeshcat, Simulator, MeshcatVisualizer
+    DiagramBuilder, StartMeshcat, Simulator, MeshcatVisualizer,
+    VisualizationConfig, ApplyVisualizationConfig
 )
 from manipulation.station import LoadScenario, MakeHardwareStation
 
@@ -9,6 +10,10 @@ def create_scenario():
     current_directory = os.getcwd()
     chess_assets_directory = 'assets/chess'
     furniture_assets_directory = 'assets/furniture'
+    room_assets_directory = 'assets/room'
+
+    # Get room
+    floor_path = f'{current_directory}/{room_assets_directory}/floor.sdf'
 
     # Get table
     table_path = f'{current_directory}/{furniture_assets_directory}/table1/model.sdf'
@@ -19,6 +24,17 @@ def create_scenario():
     # Get pieces
     dark_pawn_path = f'{current_directory}/{chess_assets_directory}/pieces/individual_pieces/dark_pawn/model.sdf'
 
+    # - add_weld:
+    # parent: table::link
+    # child: chessboard::link
+    # X_PC:
+    #     translation: [0.0, 0.0, -0.05]
+    #     rotation: !Rpy {{ deg: [0, 0, -90] }}
+
+    # - add_model:
+    # name: floor
+    # file: file://{floor_path}
+
     # Create scenario
     scenario_string = f'''directives:
     - add_model:
@@ -27,15 +43,12 @@ def create_scenario():
     - add_weld:
         parent: world
         child: table::link
-        X_PC:
-            translation: [0.0, 0.0, -0.05]
-            rotation: !Rpy {{ deg: [0, 0, -90] }}
     - add_model:
         name: chessboard
         file: file://{chessboard_path}
-    - add_weld:
-        parent: table::link
-        child: chessboard::link
+        default_free_body_pose:
+            link:
+                translation: [0, 0, {1.0}]
     - add_model:
         name: dark_pawn
         file: file://{dark_pawn_path}
@@ -43,7 +56,10 @@ def create_scenario():
             link:
                 translation: [-0.35, 0, 0]
                 rotation: !Rpy {{ deg: [0, 0, 0] }}
-    '''
+visualization:
+    publish_contacts: true
+    publish_proximity: true
+'''
 
     return scenario_string
 
@@ -67,6 +83,7 @@ def setup_simulation():
     # Create and run a simulator
     simulator = Simulator(diagram)
     simulator.set_target_realtime_rate(1.0)
-    simulator.AdvanceTo(0.1)
+    # simulator.AdvanceTo(10.0)
+    simulator.AdvanceTo(10.0)
 
     return diagram, simulator

@@ -44,7 +44,7 @@ def main():
 
     # Info
     dim = {'X': 43.25, 'Y': 43.25, 'Z': 1.54}
-    scaling_factor = 10 # Experiment with this
+    scaling_factor = 100 # Experiment with this
 
     # Calculate collision box height based on mesh height
     x, y, z = dim['X'], dim['Y'], dim['Z']
