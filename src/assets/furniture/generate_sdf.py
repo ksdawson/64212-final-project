@@ -47,7 +47,7 @@ def main():
     # Info
     dimensions = {
         'table1': {'X': 147.70, 'Y': 94.92, 'Z': 47.46, 'Z_OFFSET': 22.46},
-        'table2': {'X': 149.17, 'Y': 149.24, 'Z': 74.61, 'Z_OFFSET': 0} # fix z offset
+        'table2': {'X': 149.17, 'Y': 149.24, 'Z': 74.61, 'Z_OFFSET': -8.90}
     }
     scaling_factor = 100 # Experiment with this
     tables = ['table1', 'table2']
@@ -55,10 +55,11 @@ def main():
     for table in tables:
         # Calculate collision box height based on mesh height
         dim = dimensions[table]
-        x, y, z = dim['X'], dim['Y'], dim['Z']
+        x, y, z, z_offset = dim['X'], dim['Y'], dim['Z'], dim['Z_OFFSET']
         x /= scaling_factor
         y /= scaling_factor
         z /= scaling_factor
+        z_offset /= scaling_factor
 
         # Scale mesh to same size as collision box
         scale = 1/scaling_factor
@@ -74,7 +75,7 @@ def main():
         name = table
         sdf_string = base_sdf_string.format(NAME=name,
             MASS=m, IXX=ixx, IYY=iyy, IZZ=izz,
-            X=x, Y=y, Z=z, Z_OFFSET=dim['Z_OFFSET'],
+            X=x, Y=y, Z=z, Z_OFFSET=z_offset,
             SCALE_X=scale_x, SCALE_Y=scale_y, SCALE_Z=scale_z
         )
 

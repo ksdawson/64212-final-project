@@ -1,7 +1,6 @@
 import os
 from pydrake.all import (
-    DiagramBuilder, StartMeshcat, Simulator, MeshcatVisualizer,
-    VisualizationConfig, ApplyVisualizationConfig
+    DiagramBuilder, StartMeshcat, Simulator, MeshcatVisualizer
 )
 from manipulation.station import LoadScenario, MakeHardwareStation
 
@@ -43,18 +42,22 @@ def create_scenario():
     - add_weld:
         parent: world
         child: table::link
+        X_PC:
+            translation: [0.0, 0.0, 0.012721]
     - add_model:
         name: chessboard
         file: file://{chessboard_path}
-        default_free_body_pose:
-            link:
-                translation: [0, 0, {1.0}]
+    - add_weld:
+        parent: table::link
+        child: chessboard::link
+        X_PC:
+            translation: [0.0, 0.0, 0.4746]
     - add_model:
         name: dark_pawn
         file: file://{dark_pawn_path}
         default_free_body_pose:
             link:
-                translation: [-0.35, 0, 0]
+                translation: [0, 0, 10.0]
                 rotation: !Rpy {{ deg: [0, 0, 0] }}
 visualization:
     publish_contacts: true
@@ -83,7 +86,6 @@ def setup_simulation():
     # Create and run a simulator
     simulator = Simulator(diagram)
     simulator.set_target_realtime_rate(1.0)
-    # simulator.AdvanceTo(10.0)
     simulator.AdvanceTo(10.0)
 
     return diagram, simulator

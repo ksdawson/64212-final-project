@@ -15,7 +15,7 @@
         </inertia>
       </inertial>
       <collision name="collision">
-        <pose>0 0 22.46 0 0 0</pose>
+        <pose>0 0 0.22460000000000002 0 0 0</pose>
         <geometry>
           <box>
             <size>1.4769999999999999 0.9492 0.4746</size>
