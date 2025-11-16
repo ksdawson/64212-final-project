@@ -72,7 +72,7 @@ def main():
             'rook': {'X_OFFSET': -682.95, 'Y_OFFSET': 129.92, 'Z_OFFSET': -2211.98}
         }
     }
-    scaling_factor = 2500 # Experiment with this
+    scaling_factor = 3500 # Experiment with this
 
     # Generate SDFs
     for color in colors:

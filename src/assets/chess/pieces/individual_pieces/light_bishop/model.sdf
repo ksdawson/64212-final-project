@@ -4,21 +4,21 @@
     <pose>0 0 0 0 0 0</pose>
     <link name="link">
       <inertial>
-        <mass>0.395167836465024</mass>
+        <mass>0.1440116022102857</mass>
         <inertia>
-          <ixx>0.0008031197449730758</ixx>
+          <ixx>0.0001493276136753056</ixx>
           <ixy>0.0</ixy>
           <ixz>0.0</ixz>
-          <iyy>0.0002600608915695213</iyy>
+          <iyy>4.835427418068387e-05</iyy>
           <iyz>0.0</iyz>
-          <izz>0.0008031362993440811</izz>
+          <izz>0.00014933069170287692</izz>
         </inertia>
       </inertial>
       <collision name="collision">
-        <pose>-0.055167999999999995 0.07148 -0.8847280000000001 0 0 0</pose>
+        <pose>-0.03940571428571428 0.051057142857142856 -0.6319485714285715 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.06284 0.142968 0.062836</size>
+            <size>0.044885714285714286 0.10212 0.04488285714285714</size>
           </box>
         </geometry>
       </collision>
@@ -26,7 +26,7 @@
         <geometry>
           <mesh>
             <uri>model.obj</uri>
-            <scale>0.0004 0.0004 0.0004</scale>
+            <scale>0.00028571428571428574 0.00028571428571428574 0.00028571428571428574</scale>
           </mesh>
         </geometry>
       </visual>
