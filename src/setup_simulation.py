@@ -86,8 +86,33 @@ piece_scenario_str = '''- add_model:
         file: file://{PATH}
         default_free_body_pose:
             link:
-                translation: [-0.25, -0.6, 0.517262]
+                translation: [{X}, {Y}, 0.517262]
                 rotation: !Rpy {{ deg: [90, 0, 0] }}'''
+
+def get_pieces_poses():
+    # Pieces info
+    colors = ['dark', 'light']
+    pieces = ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']
+    piece_nums = [8, 1, 1, 2, 2, 2]
+
+    # Piece poses
+    e7_x, e7_y = -0.17, -0.4575
+    sq_size = 0.047
+    piece_poses = {}
+
+    # Add pawns
+    piece_poses['dark'] = {}
+    piece_poses['dark']['pawn'] = {}
+    for p in range(-3, 5):
+        p7_x, p7_y = e7_x + p * sq_size, e7_y
+        piece_poses['dark']['pawn'][p+3] = p7_x, p7_y
+    piece_poses['light'] = {}
+    piece_poses['light']['pawn'] = {}
+    for p in range(-3, 5):
+        p2_x, p2_y = e7_x + p * sq_size, e7_y + 1.75 * sq_size
+        piece_poses['light']['pawn'][p+3] = p2_x, p2_y
+
+    return piece_poses
 
 def create_scenario():
     # Get paths to assets
@@ -106,17 +131,16 @@ def create_scenario():
     chessboard_path = f'{current_directory}/{chess_assets_directory}/chessboard/model.sdf'
 
     # Get pieces
-    colors = ['dark', 'light']
-    pieces = ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']
-    piece_nums = [8, 1, 1, 2, 2, 2]
+    piece_poses = get_pieces_poses()
     piece_strs = []
-    for color in colors:
-        for piece, piece_num in zip(pieces, piece_nums):
+    for color in piece_poses:
+        for piece in piece_poses[color]:
             name = f'{color}_{piece}'
             piece_path = f'{current_directory}/{chess_assets_directory}/pieces/individual_pieces/{name}/model.sdf'
-            for p in range(piece_num):
+            for p in piece_poses[color][piece]:
                 name_copy = f'{name}_{p}'
-                model_str = piece_scenario_str.format(NAME=name_copy, PATH=piece_path)
+                x, y = piece_poses[color][piece][p]
+                model_str = piece_scenario_str.format(NAME=name_copy, PATH=piece_path, X=x, Y=y)
                 piece_strs.append(model_str)
     
     # Create scenario
