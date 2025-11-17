@@ -69,10 +69,23 @@ def get_scene_point_cloud(diagram, context):
 # Only chess pieces change locations so ICP should crop out everything but those
 
 def finalize_scene_point_cloud(scene_point_cloud):
-    # Should crop out the floor, table, chessboard, and IIWAs
+    # Crop out the floor by cropping below z=0.01
+    floor = 0.01
+    scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-100, -100, floor], upper_xyz=[100, 100, 100])
 
-    # Crop out the floor
-    scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-100, -100, 0.01], upper_xyz=[100, 100, 100])
+    # The pieces can only be on top of the table, chessboard, or on the ground.
+    # This gives very tight z-value ranges for where pieces can be.
+    # (1) Piece on ground
+    piece_height = 494.27 / 6500 # Tallest piece standing up is the King
+    floor_region = scene_point_cloud.Crop(lower_xyz=[-100, -100, floor], upper_xyz=[100, 100, floor+piece_height])
+    
+    # (2) Piece on table/chessboard
+    table_height = 0.4746 + 0.012721
+    chessboard_height = 0.0154
+    table_region = scene_point_cloud.Crop(lower_xyz=[-100, -100, floor+table_height], upper_xyz=[100, 100, floor+table_height+chessboard_height+piece_height])
+    
+    # Combine the regions
+    scene_point_cloud = Concatenate([floor_region, table_region])
 
     # Downsample to speed up ICP
     scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=0.005)
