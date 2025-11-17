@@ -31,7 +31,7 @@ directives:
         name: camera2_origin
         X_PF:
             base_frame: world
-            rotation: !Rpy { deg: [0.0, 0.0, 0.0] }
+            rotation: !Rpy { deg: [0.0, 180.0, 0.0] }
             translation: [0, 0, 1.5]
     - add_weld:
         parent: camera2_origin
