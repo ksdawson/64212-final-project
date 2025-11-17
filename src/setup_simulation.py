@@ -1,12 +1,44 @@
 import os
-from pydrake.all import (
-    DiagramBuilder, StartMeshcat, Simulator
-)
-from manipulation.station import LoadScenario, MakeHardwareStation
 
 # Base string containing the IIWAs, table, and chessboard
 base_scenario_string = '''
 directives:
+    - add_model:
+        name: camera0
+        file: package://manipulation/camera_box.sdf
+    - add_frame:
+        name: camera0_origin
+        X_PF:
+            base_frame: world
+            rotation: !Rpy {{ deg: [-120.0, 0.0, 90.0] }}
+            translation: [2, 0, 1]
+    - add_weld:
+        parent: camera0_origin
+        child: camera0::base
+    - add_model:
+        name: camera1
+        file: package://manipulation/camera_box.sdf
+    - add_frame:
+        name: camera1_origin
+        X_PF:
+            base_frame: world
+            rotation: !Rpy {{ deg: [-120.0, 0.0, 270.0] }}
+            translation: [-2, 0, 1]
+    - add_weld:
+        parent: camera1_origin
+        child: camera1::base
+    - add_model:
+        name: camera2
+        file: package://manipulation/camera_box.sdf
+    - add_frame:
+        name: camera2_origin
+        X_PF:
+            base_frame: world
+            rotation: !Rpy {{ deg: [0.0, 0.0, 0.0] }}
+            translation: [0, 0, 1.5]
+    - add_weld:
+        parent: camera2_origin
+        child: camera2::base
     - add_model:
         name: floor
         file: file://{FLOOR_PATH}
@@ -82,6 +114,22 @@ directives:
         X_PC:
             translation: [0.0, 0.0, 0.4846]
     {PIECES}
+cameras:
+    camera0:
+        name: camera0
+        depth: True
+        X_PB:
+            base_frame: camera0::base
+    camera1:
+        name: camera1
+        depth: True
+        X_PB:
+            base_frame: camera1::base
+    camera2:
+        name: camera2
+        depth: True
+        X_PB:
+            base_frame: camera2::base
 visualization:
     publish_contacts: true
     publish_proximity: true
@@ -203,30 +251,6 @@ def get_scenario():
     with open(file_path, 'r') as f:
         content = f.read()
         return content
-
-def setup_simulation():
-    # Setup meshcat for visualization
-    meshcat = StartMeshcat()
-    print('Click the link above to open Meshcat in your browser!')
-
-    # Get scenario
-    scenario_string = get_scenario()
-
-    # Load the scenario and build the simulation station
-    scenario = LoadScenario(data=scenario_string)
-    station = MakeHardwareStation(scenario, meshcat=meshcat)
-
-    # Build a simple Drake Diagram containing the station
-    builder = DiagramBuilder()
-    builder.AddSystem(station)
-    diagram = builder.Build()
-
-    # Create and run a simulator
-    simulator = Simulator(diagram)
-    simulator.set_target_realtime_rate(1.0)
-    simulator.AdvanceTo(0.1)
-
-    return diagram, simulator
 
 if __name__ == '__main__':
     create_scenario()
