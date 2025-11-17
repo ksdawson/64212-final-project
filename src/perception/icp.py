@@ -54,14 +54,6 @@ def get_scene_point_cloud(diagram, context):
     camera1_point_cloud = diagram.GetOutputPort("camera1_point_cloud").Eval(context)
     camera2_point_cloud = diagram.GetOutputPort("camera2_point_cloud").Eval(context)
 
-    # Should we crop them?
-    # camera0_point_cloud.Crop(lower_xyz=lower, upper_xyz=upper)
-
-    # Crop out the floor
-    camera0_point_cloud = camera0_point_cloud.Crop(lower_xyz=[-100, -100, 0.01], upper_xyz=[100, 100, 100])
-    camera1_point_cloud = camera1_point_cloud.Crop(lower_xyz=[-100, -100, 0.01], upper_xyz=[100, 100, 100])
-    camera2_point_cloud = camera2_point_cloud.Crop(lower_xyz=[-100, -100, 0.01], upper_xyz=[100, 100, 100])
-
     # Concatenate the point clouds
     pcd = [
         camera0_point_cloud,
@@ -70,10 +62,22 @@ def get_scene_point_cloud(diagram, context):
     ]
     merged_pcd = Concatenate(pcd)
 
-    # Downsample the point clouds
-    point_cloud = merged_pcd.VoxelizedDownSample(voxel_size=0.005)
+    return merged_pcd
 
-    return point_cloud
+# Let's make the floor, table, chessboard, and IIWAs unmovable so known
+# (the API will have a function returning their poses?)
+# Only chess pieces change locations so ICP should crop out everything but those
+
+def finalize_scene_point_cloud(scene_point_cloud):
+    # Should crop out the floor, table, chessboard, and IIWAs
+
+    # Crop out the floor
+    scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-100, -100, 0.01], upper_xyz=[100, 100, 100])
+
+    # Downsample to speed up ICP
+    scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=0.005)
+
+    return scene_point_cloud
 
 if __name__ == '__main__':
     get_model_point_clouds()
