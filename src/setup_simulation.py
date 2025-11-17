@@ -8,6 +8,12 @@ from manipulation.station import LoadScenario, MakeHardwareStation
 base_scenario_string = '''
 directives:
     - add_model:
+        name: floor
+        file: file://{FLOOR_PATH}
+    - add_weld:
+        parent: world
+        child: floor::link
+    - add_model:
         name: iiwa1
         file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
         default_joint_positions:
@@ -22,7 +28,7 @@ directives:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, -0.75, 0]
+            translation: [0, -0.75, 0.01]
             rotation: !Rpy {{ deg: [0, 0, 180] }}
     - add_model:
         name: wsg1
@@ -48,7 +54,7 @@ directives:
         parent: world
         child: iiwa2::iiwa_link_0
         X_PC:
-            translation: [0, 0.75, 0]
+            translation: [0, 0.75, 0.01]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg2
@@ -66,7 +72,7 @@ directives:
         parent: world
         child: table::link
         X_PC:
-            translation: [0.0, 0.0, 0.012721]
+            translation: [0.0, 0.0, 0.022721]
     - add_model:
         name: chessboard
         file: file://{CHESSBOARD_PATH}
@@ -74,7 +80,7 @@ directives:
         parent: table::link
         child: chessboard::link
         X_PC:
-            translation: [0.0, 0.0, 0.4746]
+            translation: [0.0, 0.0, 0.4846]
     {PIECES}
 visualization:
     publish_contacts: true
@@ -86,15 +92,10 @@ piece_scenario_str = '''- add_model:
         file: file://{PATH}
         default_free_body_pose:
             link:
-                translation: [{X}, {Y}, 0.517262]
+                translation: [{X}, {Y}, 0.527262]
                 rotation: !Rpy {{ deg: [90, 0, 0] }}'''
 
 def get_pieces_poses():
-    # Pieces info
-    colors = ['dark', 'light']
-    pieces = ['pawn', 'king', 'queen', 'bishop', 'knight', 'rook']
-    piece_nums = [8, 1, 1, 2, 2, 2]
-
     # Piece poses
     e7_x, e7_y = -0.155, -0.4225
     sq_size = 0.047
@@ -183,6 +184,7 @@ def create_scenario():
     
     # Create scenario
     scenario_string = base_scenario_string.format(
+        FLOOR_PATH=floor_path,
         TABLE_PATH=table_path,
         CHESSBOARD_PATH=chessboard_path,
         PIECES='\n    '.join(piece_strs),
