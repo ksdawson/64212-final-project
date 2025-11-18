@@ -135,13 +135,17 @@ def finalize_scene_point_cloud(scene_point_cloud):
         upper_xyz=[table_x[1], table_y[1], floor_z + table_z + chessboard_z + piece_z]
     )
     scene_point_cloud = Concatenate([floor_region, table_region])
-
     # Crop out chessboard
     scene_point_cloud = ReverseCrop(
         scene_point_cloud,
         [chessboard_x[0], chessboard_y[0], floor_z + table_z],
         [chessboard_x[1], chessboard_y[1], floor_z + table_z + chessboard_z]
     )
+    # Crop out regions on table above table height + piece height
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [table_x[1], chessboard_y[0], 100])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], chessboard_y[1], floor_z + table_z + piece_z], [table_x[1], table_y[1], 100])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [chessboard_x[0], table_y[1], 100])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [chessboard_x[1], table_y[0], floor_z + table_z + piece_z], [table_x[1], table_y[1], 100])
 
     # Crop out IIWA bases
     # Source: https://github.com/RobotLocomotion/models/blob/master/iiwa_description/sdf/iiwa7_with_box_collision.sdf
@@ -169,7 +173,15 @@ def finalize_scene_point_cloud(scene_point_cloud):
     )
 
     # Crop out table leg bases
-    
+    eps_x, eps_y = 0.005, 0.0035
+    leg1 = [-0.711963, 0.409149 - eps_y, floor_z], [-0.65607 + eps_x, 0.448578 + eps_y, floor_z + table_z] # left front
+    leg2 = [-0.711963, -0.446239 - eps_y, floor_z], [-0.65607 + eps_x, -0.406809 + eps_y, floor_z + table_z] # left back
+    leg3 = [0.656216 - eps_x, 0.409149 - eps_y, floor_z], [0.712109, 0.448578 + eps_y, floor_z + table_z] # right front
+    leg4 = [0.656216 - eps_x, -0.446239 - eps_y, floor_z], [0.712109, -0.406809 + eps_y, floor_z + table_z] # right back
+    scene_point_cloud = ReverseCrop(scene_point_cloud, leg1[0], leg1[1])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, leg2[0], leg2[1])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, leg3[0], leg3[1])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, leg4[0], leg4[1])
 
     # Downsample to speed up ICP
     scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=0.005)
