@@ -76,8 +76,8 @@ def finalize_scene_point_cloud(scene_point_cloud):
     piece_z = 494.27 / 6500 # Tallest piece standing up is the King
 
     # Object positions
-    chessboard_x = (-0.4325/2, 0.4325/2)
-    chessboard_y = (-0.4325/2, 0.4325/2)
+    chessboard_x = (-0.4325/2 - 0.001, 0.4325/2 + 0.001) # These epsilon values work but are kind of imprecise
+    chessboard_y = (-0.4325/2 - 0.002, 0.4325/2 + 0.002)
     table_x = (-1.4769999999999999/2, 1.4769999999999999/2)
     table_y = (-0.9492/2, 0.9492/2)
 
@@ -91,15 +91,34 @@ def finalize_scene_point_cloud(scene_point_cloud):
         lower_xyz=[-100, -100, floor_z],
         upper_xyz=[100, 100, floor_z + piece_z]
     )
-    
-    # (2) Piece on table/chessboard
-    table_region = scene_point_cloud.Crop(
+
+    # (2) Piece on table
+    table_region1 = scene_point_cloud.Crop(
         lower_xyz=[table_x[0], table_y[0], floor_z + table_z],
-        upper_xyz=[table_x[1], table_y[1], floor_z + table_z + chessboard_z + piece_z]
+        upper_xyz=[chessboard_x[0], table_y[1], floor_z + table_z + piece_z]
+    )
+    table_region2 = scene_point_cloud.Crop(
+        lower_xyz=[chessboard_x[1], table_y[0], floor_z + table_z],
+        upper_xyz=[table_x[1], table_y[1], floor_z + table_z + piece_z]
+    )
+    table_region3 = scene_point_cloud.Crop(
+        lower_xyz=[table_x[0], table_y[0], floor_z + table_z],
+        upper_xyz=[table_x[1], chessboard_y[0], floor_z + table_z + piece_z]
+    )
+    table_region4 = scene_point_cloud.Crop(
+        lower_xyz=[table_x[0], chessboard_y[1], floor_z + table_z],
+        upper_xyz=[table_x[1], table_y[1], floor_z + table_z + piece_z]
+    )
+    table_region = Concatenate([table_region1, table_region2, table_region3, table_region4])
+
+    # (3) Piece on chessboard
+    chessboard_region = scene_point_cloud.Crop(
+        lower_xyz=[chessboard_x[0], chessboard_y[0], floor_z + table_z + chessboard_z],
+        upper_xyz=[chessboard_x[1], chessboard_y[1], floor_z + table_z + chessboard_z + piece_z]
     )
 
     # Combine the regions
-    scene_point_cloud = Concatenate([floor_region, table_region])
+    scene_point_cloud = Concatenate([floor_region, table_region, chessboard_region])
 
     # Downsample to speed up ICP
     scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=0.005)
