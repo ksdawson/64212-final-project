@@ -246,38 +246,12 @@ def compute_icp_error(X_Ohat, p_Om, p_Ws, chat):
 
 def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERATIONS = 25):
     initial_guess = RigidTransform()
-    pairings = [None] * len(scene_point_clouds)
-
-    # First run on pawns
-    pawn_errors = []
+    pairings = []
     for scene_point_cloud in scene_point_clouds:
-        scene = np.array(scene_point_cloud.xyzs())
-        model = np.array(model_point_clouds['pawn'].xyzs())
-        X_Ohat, chat = IterativeClosestPoint(
-            p_Om=model,
-            p_Ws=scene,
-            X_Ohat=initial_guess,
-            max_iterations=MAX_ITERATIONS
-        )
-        icp_error = compute_icp_error(X_Ohat, model, scene, chat)
-        pawn_errors.append(icp_error)
-    sorted_indices = np.argsort(pawn_errors)
-    pawn_indices = sorted_indices[:8]
-    for i in pawn_indices:
-        pairings[i] = ('pawn', pawn_errors[i])
-
-    # Run on rest of pieces
-    for i, scene_point_cloud in enumerate(scene_point_clouds):
-        if i in pawn_indices:
-            # Already matched
-            continue
         scene = np.array(scene_point_cloud.xyzs())
         error = np.inf
         model_name = None
         for name, model_point_cloud in model_point_clouds.items():
-            if name == 'pawn':
-                # Already matched
-                continue
             model = np.array(model_point_cloud.xyzs())
             X_Ohat, chat = IterativeClosestPoint(
                 p_Om=model,
@@ -289,7 +263,7 @@ def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERA
             if icp_error < error:
                 model_name = name
                 error = icp_error
-        pairings[i] = (model_name, error)
+        pairings.append((model_name, error))
     return pairings
 
 def run_icp(scene_point_cloud, model_point_clouds, MAX_ITERATIONS = 25):
