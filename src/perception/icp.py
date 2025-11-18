@@ -107,7 +107,7 @@ def ReverseCrop(pc, lower, upper):
     # Combine
     return Concatenate(crops)
 
-def finalize_scene_point_cloud(scene_point_cloud):
+def segment_scene_point_cloud(scene_point_cloud):
     # Object dimensions
     floor_z = 0.01
     table_z = 0.4746 + 0.012721
@@ -121,13 +121,13 @@ def finalize_scene_point_cloud(scene_point_cloud):
     table_y = (-0.9492/2, 0.9492/2)
 
     # Crop out the floor by cropping below z=0.01
-    scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-100, -100, floor_z], upper_xyz=[100, 100, 100])
+    scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-np.inf, -np.inf, floor_z], upper_xyz=[np.inf, np.inf, np.inf])
 
     # The pieces can only be on top of the table, chessboard, or on the ground.
     # (1) Piece on ground
     floor_region = scene_point_cloud.Crop(
-        lower_xyz=[-100, -100, floor_z],
-        upper_xyz=[100, 100, floor_z + piece_z]
+        lower_xyz=[-np.inf, -np.inf, floor_z],
+        upper_xyz=[np.inf, np.inf, floor_z + piece_z]
     )
     # (2) Piece on table/chessboard
     table_region = scene_point_cloud.Crop(
@@ -142,10 +142,10 @@ def finalize_scene_point_cloud(scene_point_cloud):
         [chessboard_x[1], chessboard_y[1], floor_z + table_z + chessboard_z]
     )
     # Crop out regions on table above table height + piece height
-    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [table_x[1], chessboard_y[0], 100])
-    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], chessboard_y[1], floor_z + table_z + piece_z], [table_x[1], table_y[1], 100])
-    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [chessboard_x[0], table_y[1], 100])
-    scene_point_cloud = ReverseCrop(scene_point_cloud, [chessboard_x[1], table_y[0], floor_z + table_z + piece_z], [table_x[1], table_y[1], 100])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [table_x[1], chessboard_y[0], np.inf])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], chessboard_y[1], floor_z + table_z + piece_z], [table_x[1], table_y[1], np.inf])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [table_x[0], table_y[0], floor_z + table_z + piece_z], [chessboard_x[0], table_y[1], np.inf])
+    scene_point_cloud = ReverseCrop(scene_point_cloud, [chessboard_x[1], table_y[0], floor_z + table_z + piece_z], [table_x[1], table_y[1], np.inf])
 
     # Crop out IIWA bases
     # Source: https://github.com/RobotLocomotion/models/blob/master/iiwa_description/sdf/iiwa7_with_box_collision.sdf
@@ -188,7 +188,7 @@ def finalize_scene_point_cloud(scene_point_cloud):
 
     return scene_point_cloud
 
-def cluster_point_cloud(point_cloud, num_clusters = 32):
+def cluster_point_cloud(point_cloud, num_clusters=32):
     # Convert point cloud to xyz matrix
     points = point_cloud.xyzs() # 3xN
     points_T = points.T # Nx3
@@ -200,8 +200,9 @@ def cluster_point_cloud(point_cloud, num_clusters = 32):
     # Extract points per cluster
     clusters = []
     for i in range(num_clusters):
-        cluster_points = points[labels == i]
-        clusters.append(cluster_points) # each cluster is a numpy array N_i x 3
+        mask = (labels == i)
+        cluster_points = points[:, mask] # select columns
+        clusters.append(cluster_points.T) # N_i x 3
 
     # Convert clusters back to point clouds
     cluster_pointclouds = []
