@@ -2,6 +2,7 @@ import os
 import numpy as np
 import trimesh
 from sklearn.cluster import KMeans
+from scipy.optimize import linear_sum_assignment
 from pydrake.all import (
     Concatenate, PointCloud, RigidTransform, RollPitchYaw
 )
@@ -9,7 +10,7 @@ from manipulation.icp import IterativeClosestPoint
 
 def get_model_point_cloud(filepath, scale, N_SAMPLE_POINTS = 1500):
     # Load object as mesh
-    mesh = trimesh.load(file_obj=filepath, file_type="obj", force='mesh')
+    mesh = trimesh.load(file_obj=filepath, file_type='obj', force='mesh')
 
     # Sample a subset of points from the mesh for faster ICP
     points = mesh.sample(N_SAMPLE_POINTS)
@@ -55,9 +56,9 @@ def get_model_point_clouds():
 
 def get_scene_point_cloud(diagram, context):
     # Get the clouds from the depth cameras
-    camera0_point_cloud = diagram.GetOutputPort("camera0_point_cloud").Eval(context)
-    camera1_point_cloud = diagram.GetOutputPort("camera1_point_cloud").Eval(context)
-    camera2_point_cloud = diagram.GetOutputPort("camera2_point_cloud").Eval(context)
+    camera0_point_cloud = diagram.GetOutputPort('camera0_point_cloud').Eval(context)
+    camera1_point_cloud = diagram.GetOutputPort('camera1_point_cloud').Eval(context)
+    camera2_point_cloud = diagram.GetOutputPort('camera2_point_cloud').Eval(context)
 
     # Concatenate the point clouds
     pcd = [
@@ -74,7 +75,7 @@ def get_scene_point_cloud(diagram, context):
 # Only chess pieces change locations so ICP should crop out everything but those
 
 def ReverseCrop(pc, lower, upper):
-    "Remove all points within a bounding box by cropping the 6 outer regions."
+    'Remove all points within a bounding box by cropping the 6 outer regions.'
 
     lower = np.array(lower)
     upper = np.array(upper)
@@ -244,15 +245,30 @@ def compute_icp_error(X_Ohat, p_Om, p_Ws, chat):
     rms_error = np.sqrt(np.mean(np.sum(errors**2, axis=0)))
     return rms_error
 
-def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERATIONS = 25):
+def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERATIONS = 100):
     initial_guess = RigidTransform()
+    model_names = list(model_point_clouds.keys())
+    PIECE_COUNTS = {
+        'pawn': 8,
+        'rook': 2,
+        'knight': 2,
+        'bishop': 2,
+        'queen': 1,
+        'king': 1,
+    }
+    assert len(scene_point_clouds) == 16, 'Should be 16 scene point clouds'
+    assert len(model_point_clouds) == 6, 'Should be 6 model point clouds'
+    assert set(model_names) == set(PIECE_COUNTS.keys()), 'Incorrect model names'
+
+    # Build cost matrix (scene_count x model_count)
+    cost = np.zeros((len(scene_point_clouds), len(model_point_clouds)))
+
     pairings = []
-    for scene_point_cloud in scene_point_clouds:
-        scene = np.array(scene_point_cloud.xyzs())
-        error = np.inf
-        model_name = None
-        for name, model_point_cloud in model_point_clouds.items():
-            model = np.array(model_point_cloud.xyzs())
+    for i, scene_pc in enumerate(scene_point_clouds):
+        scene = np.array(scene_pc.xyzs())
+        for j, name in enumerate(model_names):
+            model_pc = model_point_clouds[name]
+            model = np.array(model_pc.xyzs())
             X_Ohat, chat = IterativeClosestPoint(
                 p_Om=model,
                 p_Ws=scene,
@@ -260,10 +276,26 @@ def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERA
                 max_iterations=MAX_ITERATIONS
             )
             icp_error = compute_icp_error(X_Ohat, model, scene, chat)
-            if icp_error < error:
-                model_name = name
-                error = icp_error
-        pairings.append((model_name, error))
+            cost[i, j] = icp_error
+    
+    # Expand cost matrix using PIECE_COUNTS
+    expanded_model_names = []
+    expanded_cost = []
+    for j, name in enumerate(model_names):
+        count = PIECE_COUNTS[name]
+        for k in range(count):
+            expanded_model_names.append(f'{name}{k+1}')
+            expanded_cost.append(cost[:, j]) # reuse exact same column
+    expanded_cost = np.column_stack(expanded_cost)
+
+    # Hungarian algorithm for optimal assignment
+    row_ind, col_ind = linear_sum_assignment(expanded_cost)
+
+    # Produce final results
+    pairings = []
+    for i, j in zip(row_ind, col_ind):
+        pairings.append((expanded_model_names[j], expanded_cost[i, j]))
+
     return pairings
 
 def run_icp(scene_point_cloud, model_point_clouds, MAX_ITERATIONS = 25):
