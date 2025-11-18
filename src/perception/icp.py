@@ -197,21 +197,100 @@ def cluster_point_cloud(point_cloud, num_clusters=32):
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     labels = kmeans.fit_predict(points_T) # labels[i] = cluster index for point i
 
-    # Extract points per cluster
-    clusters = []
-    for i in range(num_clusters):
-        mask = (labels == i)
-        cluster_points = points[:, mask] # select columns
-        clusters.append(cluster_points.T) # N_i x 3
-
-    # Convert clusters back to point clouds
+    # Create point clouds per cluster
     cluster_pointclouds = []
-    for cluster in clusters:
-        pc = PointCloud(len(cluster), fields=point_cloud.fields())
-        pc.mutable_xyzs()[:] = cluster.T # transpose back to 3 x N_i
+    for i in range(num_clusters):
+        # Filter points
+        mask = (labels == i)
+        cluster_points = points[:, mask] # 3 x N_i
+        # Create a new point cloud
+        pc = PointCloud(cluster_points.shape[1], fields=point_cloud.fields())
+        pc.mutable_xyzs()[:] = cluster_points
+        # Add the colors
+        if point_cloud.has_rgbs():
+            colors = point_cloud.rgbs()[:, mask]
+            pc.mutable_rgbs()[:] = colors
         cluster_pointclouds.append(pc)
 
     return cluster_pointclouds
+
+def classify_by_color(piece_clouds):
+    # Color of dark and light pieces
+    DARK_RGB = np.array([0.16078431 * 255, 0.04313725 * 255, 0.00392157 * 255])
+    LIGHT_RGB = np.array([0.64705882 * 255, 0.56470588 * 255, 0.43529412 * 255])
+
+    # Classify piece clouds by color
+    classifications = []
+    for cloud in piece_clouds:
+        # Average the color of the point cloud to get the piece color
+        colors = cloud.rgbs()
+        rgb = np.mean(colors, axis=1)
+
+        # Classify it by determining which color its closer to
+        if rgb.ndim == 1:
+            dist_dark = np.linalg.norm(rgb - DARK_RGB)
+            dist_light = np.linalg.norm(rgb - LIGHT_RGB)
+            classification = 'dark' if dist_dark < dist_light else 'light'
+        else:
+            dist_dark = np.linalg.norm(rgb - DARK_RGB, axis=1)
+            dist_light = np.linalg.norm(rgb - LIGHT_RGB, axis=1)
+            classification = np.where(dist_dark < dist_light, 'dark', 'light')
+        classifications.append(classification)
+    return classifications
+
+def compute_icp_error(X_Ohat, p_Om, p_Ws, chat):
+    p_Om_transformed = X_Ohat @ p_Om[:, chat]
+    errors = p_Ws - p_Om_transformed
+    rms_error = np.sqrt(np.mean(np.sum(errors**2, axis=0)))
+    return rms_error
+
+def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERATIONS = 25):
+    initial_guess = RigidTransform()
+    pairings = [None] * len(scene_point_clouds)
+
+    # First run on pawns
+    pawn_errors = []
+    for scene_point_cloud in scene_point_clouds:
+        scene = np.array(scene_point_cloud.xyzs())
+        model = np.array(model_point_clouds['pawn'].xyzs())
+        X_Ohat, chat = IterativeClosestPoint(
+            p_Om=model,
+            p_Ws=scene,
+            X_Ohat=initial_guess,
+            max_iterations=MAX_ITERATIONS
+        )
+        icp_error = compute_icp_error(X_Ohat, model, scene, chat)
+        pawn_errors.append(icp_error)
+    sorted_indices = np.argsort(pawn_errors)
+    pawn_indices = sorted_indices[:8]
+    for i in pawn_indices:
+        pairings[i] = ('pawn', pawn_errors[i])
+
+    # Run on rest of pieces
+    for i, scene_point_cloud in enumerate(scene_point_clouds):
+        if i in pawn_indices:
+            # Already matched
+            continue
+        scene = np.array(scene_point_cloud.xyzs())
+        error = np.inf
+        model_name = None
+        for name, model_point_cloud in model_point_clouds.items():
+            if name == 'pawn':
+                # Already matched
+                continue
+            model = np.array(model_point_cloud.xyzs())
+            X_Ohat, chat = IterativeClosestPoint(
+                p_Om=model,
+                p_Ws=scene,
+                X_Ohat=initial_guess,
+                max_iterations=MAX_ITERATIONS
+            )
+            icp_error = compute_icp_error(X_Ohat, model, scene, chat)
+            if icp_error < error:
+                model_name = name
+                error = icp_error
+        pairings[i] = (model_name, error)
+    return pairings
 
 def run_icp(scene_point_cloud, model_point_clouds, MAX_ITERATIONS = 25):
     scene = np.array(scene_point_cloud.xyzs())
@@ -224,13 +303,13 @@ def run_icp(scene_point_cloud, model_point_clouds, MAX_ITERATIONS = 25):
         for piece in pieces:
             model_point_cloud = model_point_clouds['pieces'][color][piece]
             model = np.array(model_point_cloud.xyzs())
-            piece_X_Ohat, _ = IterativeClosestPoint(
+            X_Ohat, chat = IterativeClosestPoint(
                 p_Om=model,
                 p_Ws=scene,
                 X_Ohat=initial_guess,
                 max_iterations=MAX_ITERATIONS
             )
-            poses[color][piece] = piece_X_Ohat
+            poses[color][piece] = X_Ohat
     return poses
 
 if __name__ == '__main__':
