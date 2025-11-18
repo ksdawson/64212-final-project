@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import trimesh
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 from scipy.optimize import linear_sum_assignment
 from pydrake.all import (
     Concatenate, PointCloud, RigidTransform, RollPitchYaw
@@ -211,6 +211,32 @@ def cluster_point_cloud(point_cloud, num_clusters=32):
         if point_cloud.has_rgbs():
             colors = point_cloud.rgbs()[:, mask]
             pc.mutable_rgbs()[:] = colors
+        cluster_pointclouds.append(pc)
+
+    return cluster_pointclouds
+
+def cluster_point_cloud_dbscan(point_cloud, eps=0.02, min_samples=32):
+    # Convert point cloud to xyz matrix
+    points = point_cloud.xyzs()   # 3xN
+    pts = points.T                # Nx3
+
+    # Run DBSCAN
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(pts)
+    labels = db.labels_           # labels[i] = cluster index OR -1 for noise
+
+    unique_labels = [l for l in np.unique(labels) if l != -1]  # skip noise
+    cluster_pointclouds = []
+
+    for label in unique_labels:
+        mask = (labels == label)
+        cluster_points = points[:, mask]  # 3xNi
+
+        pc = PointCloud(cluster_points.shape[1], fields=point_cloud.fields())
+        pc.mutable_xyzs()[:] = cluster_points
+
+        if point_cloud.has_rgbs():
+            pc.mutable_rgbs()[:] = point_cloud.rgbs()[:, mask]
+
         cluster_pointclouds.append(pc)
 
     return cluster_pointclouds
