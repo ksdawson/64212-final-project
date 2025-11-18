@@ -85,7 +85,6 @@ def finalize_scene_point_cloud(scene_point_cloud):
     scene_point_cloud = scene_point_cloud.Crop(lower_xyz=[-100, -100, floor_z], upper_xyz=[100, 100, 100])
 
     # The pieces can only be on top of the table, chessboard, or on the ground.
-    # This gives very tight z-value ranges for where pieces can be.
     # (1) Piece on ground
     floor_region = scene_point_cloud.Crop(
         lower_xyz=[-100, -100, floor_z],
@@ -116,6 +115,8 @@ def finalize_scene_point_cloud(scene_point_cloud):
         lower_xyz=[chessboard_x[0], chessboard_y[0], floor_z + table_z + chessboard_z],
         upper_xyz=[chessboard_x[1], chessboard_y[1], floor_z + table_z + chessboard_z + piece_z]
     )
+
+    # TODO: Crop out IIWA bases and bases of table legs
 
     # Combine the regions
     scene_point_cloud = Concatenate([floor_region, table_region, chessboard_region])
