@@ -12,7 +12,7 @@ from perception.bounding_box import cloud_bounding_box_similarity
 # Segmentation stage
 ######################################################################
 
-def segment_scene_point_cloud(scene_point_cloud):
+def segment_scene_point_cloud(scene_point_cloud, voxel_size=0.005):
     # Object dimensions
     floor_z = 0.01
     table_z = 0.4746 + 0.012721
@@ -89,7 +89,7 @@ def segment_scene_point_cloud(scene_point_cloud):
     scene_point_cloud = ReverseCrop(scene_point_cloud, leg4[0], leg4[1])
 
     # Downsample to speed up ICP
-    scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=0.005)
+    scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=voxel_size)
 
     return scene_point_cloud
 
