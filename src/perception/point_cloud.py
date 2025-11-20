@@ -9,13 +9,13 @@ from pydrake.all import (
 # Functions to load point clouds
 ######################################################################
 
-def get_model_point_cloud(filepath, scale, N_SAMPLE_POINTS = 1500):
+def get_model_point_cloud(filepath, scale, n_sample_points = 1500):
     # Load object as mesh
     mesh = trimesh.load(file_obj=filepath, file_type='obj', force='mesh')
 
     # Sample a subset of points from the mesh for faster ICP
-    points = mesh.sample(N_SAMPLE_POINTS)
-    points /= scale
+    points = mesh.sample(n_sample_points)
+    points /= scale # scale to size of scene
     points = np.array(points).T
 
     # Create a PointCloud
@@ -24,7 +24,7 @@ def get_model_point_cloud(filepath, scale, N_SAMPLE_POINTS = 1500):
 
     return cloud
 
-def get_model_point_clouds():
+def get_model_point_clouds(n_sample_points = 1500):
     current_directory = os.getcwd()
     clouds = {}
 
@@ -50,7 +50,7 @@ def get_model_point_clouds():
             name = f'{color}_{piece}'
             piece_path = f'{current_directory}/assets/chess/pieces/individual_pieces/{name}/model.obj'
             scaling_factor = pawn_scaling_factor if piece == 'pawn' else back_pieces_scaling_factor
-            piece_cloud = get_model_point_cloud(piece_path, scaling_factor)
+            piece_cloud = get_model_point_cloud(piece_path, scaling_factor, n_sample_points=n_sample_points)
             clouds['pieces'][color][piece] = piece_cloud
 
     return clouds

@@ -6,6 +6,7 @@ from pydrake.all import (
 from perception.point_cloud import ReverseCrop
 from perception.color import classify_by_color
 from perception.icp import run_icp
+from perception.bounding_box import cloud_bounding_box_similarity
 
 ######################################################################
 # Segmentation stage
@@ -105,18 +106,11 @@ def classify_piece_colors(piece_clouds):
 ######################################################################
 # Scene to model pairing stage
 ######################################################################
+PIECE_COUNTS = {'pawn': 8, 'rook': 2, 'knight': 2, 'bishop': 2, 'queen': 1, 'king': 1}
 
-def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERATIONS = 100):
+def match_scene_to_model_cloud_icp(scene_point_clouds, model_point_clouds, max_iters = 100):
     # Pieces
     model_names = list(model_point_clouds.keys())
-    PIECE_COUNTS = {
-        'pawn': 8,
-        'rook': 2,
-        'knight': 2,
-        'bishop': 2,
-        'queen': 1,
-        'king': 1,
-    }
 
     # Checks to ensure inputs are correct
     assert len(scene_point_clouds) == 16, 'Should be 16 scene point clouds'
@@ -136,7 +130,7 @@ def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERA
         initial_pose.set_translation(centroid)
         for j, name in enumerate(model_names):
             model_pc = model_point_clouds[name]
-            X_Ohat, chat, icp_error = run_icp(scene_pc, model_pc, max_iters=100, initial_guess=initial_pose)
+            X_Ohat, chat, icp_error, icp_error_alt = run_icp(scene_pc, model_pc, max_iters=max_iters, initial_guess=initial_pose)
             cost[i, j] = icp_error
             poses[i][j] = X_Ohat # store pose for (scene i, model j)
     
@@ -161,5 +155,44 @@ def match_scene_to_model_cloud(scene_point_clouds, model_point_clouds, MAX_ITERA
         piece_name = expanded_model_names[j]
         X_Ohat = expanded_poses[j][i] # pose for this pairing
         result[piece_name] = X_Ohat
-
     return result
+
+def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds):
+    # Pieces
+    model_names = list(model_point_clouds.keys())
+
+    # Checks to ensure inputs are correct
+    assert len(scene_point_clouds) == 16, 'Should be 16 scene point clouds'
+    assert len(model_point_clouds) == 6, 'Should be 6 model point clouds'
+    assert set(model_names) == set(PIECE_COUNTS.keys()), 'Incorrect model names'
+
+    # Build cost matrix (scene_count x model_count)
+    cost = np.zeros((len(scene_point_clouds), len(model_point_clouds)))
+
+    # Partially fill in the cost matrix using the unique scene, model pairs
+    for i, scene_pc in enumerate(scene_point_clouds):
+        for j, name in enumerate(model_names):
+            model_pc = model_point_clouds[name]
+            bb_similarity = cloud_bounding_box_similarity(scene_pc, model_pc)
+            cost[i, j] = bb_similarity
+
+    # Expand cost matrix using PIECE_COUNTS
+    expanded_model_names = []
+    expanded_cost = []
+    expanded_poses = []
+    for j, name in enumerate(model_names):
+        count = PIECE_COUNTS[name]
+        for k in range(count):
+            expanded_model_names.append(f'{name}{k+1}')
+            expanded_cost.append(cost[:, j]) # reuse exact same column
+    expanded_cost = np.column_stack(expanded_cost)
+
+    # Hungarian algorithm for optimal assignment
+    row_ind, col_ind = linear_sum_assignment(expanded_cost)
+
+    # Build mapping of piece-instance to pose
+    mapping = [None] * len(scene_point_clouds)
+    for i, j in zip(row_ind, col_ind):
+        piece_name = expanded_model_names[j]
+        mapping[i] = piece_name
+    return mapping
