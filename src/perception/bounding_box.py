@@ -19,11 +19,3 @@ def cloud_bounding_box_similarity(scene_point_cloud, model_point_cloud):
     # Compute the similarity between the boxes vector distance
     dist = np.linalg.norm(scene_bb - model_bb)
     return dist
-
-def cloud_centroid_similarity(scene_point_cloud, model_point_cloud):
-    # Scene centroid
-    scene_pts = scene_point_cloud.xyzs()
-    scene_centroid = np.mean(scene_pts, axis=1)
-    # Model centroid
-    scene_pts = scene_point_cloud.xyzs()
-    scene_centroid = np.mean(scene_pts, axis=1)
