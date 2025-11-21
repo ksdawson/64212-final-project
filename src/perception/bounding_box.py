@@ -23,9 +23,9 @@ def orient_cloud(point_cloud, main_axis):
         s = np.linalg.norm(v)
         c = np.dot(a, z)
         vx = np.array([
-            [0,     -v[2],  v[1]],
-            [v[2],   0,    -v[0]],
-            [-v[1],  v[0],  0   ],
+            [0, -v[2], v[1]],
+            [v[2], 0, -v[0]],
+            [-v[1], v[0], 0],
         ])
         R = np.eye(3) + vx + vx @ vx * ((1 - c) / (s*s))
 

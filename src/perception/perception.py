@@ -9,6 +9,7 @@ from perception.icp import run_icp
 from perception.bounding_box import cloud_bounding_box_similarity, cloud_oriented_bounding_box_similarity
 from perception.axis import get_piece_cloud_main_axis
 from perception.clustering import cluster_point_cloud_hybrid
+from perception.curvature import cloud_oriented_rz_similarity
 
 ######################################################################
 # Scene cloud segmentation stage
@@ -184,6 +185,28 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, scene_
             else:
                 bb_similarity = cloud_bounding_box_similarity(scene_pc, model_pc)
             cost[i, j] = bb_similarity
+
+    # Check if tie breakers are needed
+    ABS_TIE_THRESHOLD = 0.002
+    REL_TIE_THRESHOLD = 0.25
+    # TODO: Could include rz similarity directly in the objective
+    for i, scene_pc in enumerate(scene_point_clouds):
+        bb_sims = cost[i, :]
+        sorted_idx = np.argsort(bb_sims)
+        top1_idx, top2_idx = sorted_idx[0], sorted_idx[1]
+        top1_bb, top2_bb = bb_sims[top1_idx], bb_sims[top2_idx]
+        # TODO: Could consider more than just the top2 like "top_candidates = np.where(np.abs(bb_sims - bb_sims.min()) < TIE_THRESHOLD)[0]"
+        # if (top2_bb - top1_bb) / top1_bb < REL_TIE_THRESHOLD and abs(top1_bb - top2_bb) < ABS_TIE_THRESHOLD: # More conservative
+        if abs(top1_bb - top2_bb) < ABS_TIE_THRESHOLD:
+            # Only adjust if close enough
+            scene_pc = scene_point_clouds[i]
+            scene_main_axis = scene_main_axes[i] if scene_main_axes is not None else get_piece_cloud_main_axis(scene_pc)
+            rz_sim_top1 = cloud_oriented_rz_similarity(scene_pc, model_point_clouds[model_names[top1_idx]], scene_main_axis, None)
+            rz_sim_top2 = cloud_oriented_rz_similarity(scene_pc, model_point_clouds[model_names[top2_idx]], scene_main_axis, None)
+            if rz_sim_top2 < rz_sim_top1:
+                # Swap top candidates
+                bb_sims[top1_idx], bb_sims[top2_idx] = bb_sims[top2_idx], bb_sims[top1_idx]
+                cost[i, :] = bb_sims
 
     # Expand cost matrix using PIECE_COUNTS
     expanded_model_names = []
