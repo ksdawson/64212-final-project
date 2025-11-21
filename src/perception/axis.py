@@ -1,8 +1,7 @@
 import numpy as np
 
 ######################################################################
-# Compute main axis of piece cloud with vector pointing in the
-# direction of the top of the piece
+# Compute piece cloud main axis w/ vector in dir of top of piece
 ######################################################################
 
 def get_cloud_main_axis_pca(point_cloud):

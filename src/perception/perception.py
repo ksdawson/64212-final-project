@@ -1,16 +1,17 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from pydrake.all import (
-    Concatenate, RollPitchYaw, RigidTransform
+    Concatenate, RollPitchYaw, RigidTransform, AngleAxis, RotationMatrix
 )
-from perception.point_cloud import ReverseCrop
+from perception.point_cloud import ReverseCrop, get_scene_point_cloud
 from perception.color import classify_by_color
 from perception.icp import run_icp
 from perception.bounding_box import cloud_bounding_box_similarity, cloud_oriented_bounding_box_similarity
 from perception.axis import get_piece_cloud_main_axis
+from perception.clustering import cluster_point_cloud_hybrid
 
 ######################################################################
-# Segmentation stage
+# Scene cloud segmentation stage
 ######################################################################
 
 def segment_scene_point_cloud(scene_point_cloud, voxel_size=0.005):
@@ -89,8 +90,9 @@ def segment_scene_point_cloud(scene_point_cloud, voxel_size=0.005):
     scene_point_cloud = ReverseCrop(scene_point_cloud, leg3[0], leg3[1])
     scene_point_cloud = ReverseCrop(scene_point_cloud, leg4[0], leg4[1])
 
-    # Downsample to speed up ICP
-    scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=voxel_size)
+    # Downsample to speed up processing
+    if voxel_size is not None:
+        scene_point_cloud = scene_point_cloud.VoxelizedDownSample(voxel_size=voxel_size)
 
     return scene_point_cloud
 
@@ -105,8 +107,9 @@ def classify_piece_colors(piece_clouds):
     return classify_by_color(piece_clouds, [('dark', DARK_RGB), ('light', LIGHT_RGB)])
 
 ######################################################################
-# Scene to model pairing stage
+# Piece classification stage
 ######################################################################
+
 PIECE_COUNTS = {'pawn': 8, 'rook': 2, 'knight': 2, 'bishop': 2, 'queen': 1, 'king': 1}
 
 def match_scene_to_model_cloud_icp(scene_point_clouds, model_point_clouds, max_iters = 100):
@@ -158,7 +161,7 @@ def match_scene_to_model_cloud_icp(scene_point_clouds, model_point_clouds, max_i
         result[piece_name] = X_Ohat
     return result
 
-def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, obb=True):
+def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, scene_main_axes=None, obb=True):
     # Pieces
     model_names = list(model_point_clouds.keys())
 
@@ -172,8 +175,7 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, obb=Tr
 
     # Partially fill in the cost matrix using the unique scene, model pairs
     for i, scene_pc in enumerate(scene_point_clouds):
-        if obb:
-            scene_main_axis = get_piece_cloud_main_axis(scene_pc)
+        scene_main_axis = scene_main_axes[i] if scene_main_axes is not None else get_piece_cloud_main_axis(scene_pc)
         for j, name in enumerate(model_names):
             model_pc = model_point_clouds[name]
             if obb:
@@ -201,3 +203,98 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, obb=Tr
         piece_name = expanded_model_names[j]
         mapping[i] = piece_name
     return mapping
+
+######################################################################
+# Pose calculation stage
+######################################################################
+
+def calculate_poses(scene_clouds, scene_main_axes=None):
+    poses = []
+    for i, scene_pc in enumerate(scene_clouds):
+        # Compute centroid for position
+        pts = scene_pc.xyzs()
+        centroid = np.mean(pts, axis=1)
+        P = centroid
+
+        # Compute or get main axis for rotation
+        scene_main_axis = scene_main_axes[i] if scene_main_axes is not None else get_piece_cloud_main_axis(scene_pc)
+
+        # Use axis angle (angle doesn't matter)
+        axis = scene_main_axis / np.linalg.norm(scene_main_axis) # make sure its normalized
+        axis = scene_main_axis
+        theta = 1.0 # radians
+        R = RotationMatrix(AngleAxis(theta, axis))
+
+        # Create pose
+        X = RigidTransform()
+        X.set_translation(P)
+        X.set_rotation(R)
+
+        poses.append(X)
+    return poses
+
+######################################################################
+# Entire pipeline
+######################################################################
+
+def perception(diagram, context, model_piece_pcs, debugging=False):
+    # Get scene point cloud from depth cameras
+    scene_point_cloud = get_scene_point_cloud(diagram, context)
+
+    # Segment scene by cropping out known objects (floor, table, chessboard, iiwas)
+    scene_point_cloud = segment_scene_point_cloud(scene_point_cloud, 0.001) # little down sampling to make more robust
+
+    # Cluster scene into piece point clouds
+    piece_pcs = cluster_point_cloud_hybrid(scene_point_cloud)
+
+    # Classify piece colors
+    piece_colors = classify_piece_colors(piece_pcs)
+    dark_piece_pcs = []
+    light_piece_pcs = []
+    for color, pc in zip(piece_colors, piece_pcs):
+        if color == 'dark':
+            dark_piece_pcs.append(pc)
+        else:
+            light_piece_pcs.append(pc)
+
+    # Compute main axes of piece clouds
+    dark_main_axes  = [get_piece_cloud_main_axis(pc) for pc in dark_piece_pcs]
+    light_main_axes = [get_piece_cloud_main_axis(pc) for pc in light_piece_pcs]
+
+    # Classify piece types
+    dark_piece_types = match_scene_to_model_cloud_bb(dark_piece_pcs, model_piece_pcs['dark'], dark_main_axes)
+    light_piece_types = match_scene_to_model_cloud_bb(light_piece_pcs, model_piece_pcs['light'], light_main_axes)
+
+    # Calculate piece poses
+    dark_piece_poses = calculate_poses(dark_piece_pcs, dark_main_axes)
+    light_piece_poses = calculate_poses(light_piece_pcs, light_main_axes)
+
+    # Build the mapping of piece color, type to pose
+    result = {'dark': {}, 'light': {}}
+    for i, piece in enumerate(dark_piece_types):
+        if piece not in result['dark']:
+            result['dark'][piece] = []
+        result['dark'][piece].append(dark_piece_poses[i])
+    for i, piece in enumerate(light_piece_types):
+        if piece not in result['light']:
+            result['light'][piece] = []
+        result['light'][piece].append(light_piece_poses[i])
+    state = {'poses': result}
+
+    # Return more info if simulation debugging
+    if debugging:
+        # Add stage values
+        state['scene_pc'] = scene_point_cloud
+        # Add piece clouds by color, piece
+        pcs = {'dark': {}, 'light': {}}
+        for i, piece in enumerate(dark_piece_types):
+            if piece not in pcs['dark']:
+                pcs['dark'][piece] = []
+            pcs['dark'][piece].append(dark_piece_pcs[i])
+        for i, piece in enumerate(light_piece_types):
+            if piece not in pcs['light']:
+                pcs['light'][piece] = []
+            pcs['light'][piece].append(light_piece_pcs[i])
+        state['piece_pcs'] = pcs
+
+    return state

@@ -4,6 +4,10 @@ from pydrake.all import (
     Rgba, RigidTransform, Box, PointCloud
 )
 
+######################################################################
+# Visualization functions
+######################################################################
+
 def visualize_box(meshcat, lower, upper, name=None):
     size = [upper[i] - lower[i] for i in range(3)]
     center = [(upper[i] + lower[i])/2 for i in range(3)]
