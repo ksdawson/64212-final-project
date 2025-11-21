@@ -6,7 +6,8 @@ from pydrake.all import (
 from perception.point_cloud import ReverseCrop
 from perception.color import classify_by_color
 from perception.icp import run_icp
-from perception.bounding_box import cloud_bounding_box_similarity
+from perception.bounding_box import cloud_bounding_box_similarity, cloud_oriented_bounding_box_similarity
+from perception.axis import get_piece_cloud_main_axis
 
 ######################################################################
 # Segmentation stage
@@ -157,7 +158,7 @@ def match_scene_to_model_cloud_icp(scene_point_clouds, model_point_clouds, max_i
         result[piece_name] = X_Ohat
     return result
 
-def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds):
+def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, obb=True):
     # Pieces
     model_names = list(model_point_clouds.keys())
 
@@ -171,9 +172,14 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds):
 
     # Partially fill in the cost matrix using the unique scene, model pairs
     for i, scene_pc in enumerate(scene_point_clouds):
+        if obb:
+            scene_main_axis = get_piece_cloud_main_axis(scene_pc)
         for j, name in enumerate(model_names):
             model_pc = model_point_clouds[name]
-            bb_similarity = cloud_bounding_box_similarity(scene_pc, model_pc)
+            if obb:
+                bb_similarity = cloud_oriented_bounding_box_similarity(scene_pc, model_pc, scene_main_axis, None)
+            else:
+                bb_similarity = cloud_bounding_box_similarity(scene_pc, model_pc)
             cost[i, j] = bb_similarity
 
     # Expand cost matrix using PIECE_COUNTS
