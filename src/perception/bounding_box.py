@@ -41,7 +41,7 @@ def orient_cloud(point_cloud, main_axis):
         pc.mutable_rgbs()[:] = point_cloud.rgbs()[:]
     return pc
 
-def get_cloud_bounding_box(point_cloud):
+def get_cloud_bounding_box(point_cloud, sort_box=True):
     pts = point_cloud.xyzs()
     x, y, z = pts[0], pts[1], pts[2]
     min_x, max_x = np.min(x), np.max(x)
@@ -49,22 +49,20 @@ def get_cloud_bounding_box(point_cloud):
     min_z, max_z = np.min(z), np.max(z)
     w, l, h = max_x - min_x, max_y - min_y, max_z - min_z
     box = np.array([w, l, h])
-    box.sort() # accounts for that a cloud can be rotated
+    if sort_box:
+        box.sort() # accounts for that a cloud can be rotated
     return box
 
 def get_cloud_oriented_bounding_box(point_cloud, main_axis):
-    # Orient cloud
-    oriented_point_cloud = orient_cloud(point_cloud, main_axis)
-    pts = oriented_point_cloud.xyzs()
+    # Orient cloud if needed
+    z = main_axis[2]
+    if abs(z - 1) > 0.02:
+        oriented_point_cloud = orient_cloud(point_cloud, main_axis)
+    else:
+        oriented_point_cloud = point_cloud
 
     # Compute bounding box
-    min_xyz = np.min(pts, axis=1)
-    max_xyz = np.max(pts, axis=1)
-    box = max_xyz - min_xyz
-
-    # Sort so w, l < h
-    box = np.sort(box)
-    return box
+    return get_cloud_bounding_box(oriented_point_cloud, False) # don't need to account for rotated cloud now
 
 ######################################################################
 # Functions to compute bounding box similarity between point clouds

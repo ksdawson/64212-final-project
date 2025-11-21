@@ -185,7 +185,6 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, obb=Tr
     # Expand cost matrix using PIECE_COUNTS
     expanded_model_names = []
     expanded_cost = []
-    expanded_poses = []
     for j, name in enumerate(model_names):
         count = PIECE_COUNTS[name]
         for k in range(count):
