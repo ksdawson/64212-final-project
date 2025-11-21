@@ -4,7 +4,7 @@ from pydrake.all import (
     Concatenate, RollPitchYaw, RigidTransform, AngleAxis, RotationMatrix
 )
 from perception.point_cloud import ReverseCrop, get_scene_point_cloud
-from perception.color import classify_by_color
+from perception.color import classify_by_color, classify_by_color_constrained
 from perception.icp import run_icp
 from perception.bounding_box import cloud_bounding_box_similarity, cloud_oriented_bounding_box_similarity
 from perception.axis import get_piece_cloud_main_axis
@@ -100,11 +100,12 @@ def segment_scene_point_cloud(scene_point_cloud, voxel_size=0.005):
 # Color classification stage
 ######################################################################
 
-def classify_piece_colors(piece_clouds):
+def classify_piece_colors(piece_clouds, constrained=True):
     # Color of dark and light pieces
     DARK_RGB = np.array([0.16078431 * 255, 0.04313725 * 255, 0.00392157 * 255])
     LIGHT_RGB = np.array([0.64705882 * 255, 0.56470588 * 255, 0.43529412 * 255])
-    return classify_by_color(piece_clouds, [('dark', DARK_RGB), ('light', LIGHT_RGB)])
+    classification_func = classify_by_color_constrained if constrained else classify_by_color
+    return classification_func(piece_clouds, [('dark', DARK_RGB), ('light', LIGHT_RGB)])
 
 ######################################################################
 # Piece classification stage
