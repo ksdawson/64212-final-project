@@ -130,6 +130,11 @@ cameras:
         depth: True
         X_PB:
             base_frame: camera2::base
+model_drivers:
+    iiwa: !IiwaDriver
+        control_mode: position_only
+        hand_model_name: wsg
+    wsg: !SchunkWsgDriver {{}}
 visualization:
     publish_contacts: true
     publish_proximity: true
