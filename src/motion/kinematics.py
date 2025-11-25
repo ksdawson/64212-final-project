@@ -9,7 +9,6 @@ def kinematic_traj_op(plant, plant_context, pose_lst):
     # Get frames
     world_frame = plant.world_frame()
     gripper_frame = plant.GetFrameByName('body')
-    context = plant.CreateDefaultContext()
 
     # Nominal joint angles for joint-centering
     q_nominal = plant.GetPositions(plant_context)
@@ -19,7 +18,7 @@ def kinematic_traj_op(plant, plant_context, pose_lst):
     q_knots = [q_nominal] # Include start
     for pose in pose_lst:
         # Setup IK OP
-        ik = inverse_kinematics.InverseKinematics(plant, context)
+        ik = inverse_kinematics.InverseKinematics(plant, plant_context)
         q_variables = ik.q()
         prog = ik.prog()
 

@@ -131,10 +131,15 @@ cameras:
         X_PB:
             base_frame: camera2::base
 model_drivers:
-    iiwa: !IiwaDriver
+    iiwa1: !IiwaDriver
         control_mode: position_only
-        hand_model_name: wsg
-    wsg: !SchunkWsgDriver {{}}
+        hand_model_name: wsg1
+    iiwa2: !IiwaDriver
+        control_mode: position_only
+        hand_model_name: wsg2
+    wsg1: !SchunkWsgDriver {{}}
+    wsg2: !SchunkWsgDriver {{}}
+    default: !ZeroForceDriver {{}}
 visualization:
     publish_contacts: true
     publish_proximity: true

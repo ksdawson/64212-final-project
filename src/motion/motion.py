@@ -35,7 +35,7 @@ class TrajectoryController(LeafSystem):
     def SetTrajectory(self, traj):
         self._traj = traj
 
-    def NextTrajctory(self, poses=None):
+    def NextTrajectory(self, poses=None):
         # If no poses then hold at pose
         if poses is None:
             self.SetTrajectory(None)
@@ -55,8 +55,10 @@ class TrajectoryController(LeafSystem):
 
     def CalcOutput(self, context, output):
         if self._traj is None:
-            # No trajectory then hold zeros
-            output.SetFromVector([0.0] * self._num_joints)
+            # No trajectory so hold at current pos
+            plant_q = self._plant.GetPositions(self._plant_context)
+            iiwa_q = plant_q[0:7]
+            output.SetFromVector(iiwa_q)
             return
 
         # Clamp to end time (i.e. hold final configuration)
