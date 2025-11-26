@@ -8,6 +8,7 @@ base_sdf_string = '''<?xml version="1.0"?>
     <pose>0 0 0 0 0 0</pose>
     <link name="link">
       <inertial>
+        <pose>{X_OFFSET} {Y_OFFSET} {Z_OFFSET} 0 0 0</pose>
         <mass>{MASS}</mass>
         <inertia>
           <ixx>{IXX}</ixx>
