@@ -4,6 +4,7 @@ import trimesh
 from pydrake.all import (
     Concatenate, PointCloud
 )
+from perception.bounding_box import orient_cloud
 
 ######################################################################
 # Functions to load point clouds
@@ -54,6 +55,22 @@ def get_model_point_clouds(n_sample_points = 1500):
             clouds['pieces'][color][piece] = piece_cloud
 
     return clouds
+
+def get_oriented_piece_model_pcs():
+    # Get model point clouds
+    model_point_clouds = get_model_point_clouds()
+    model_piece_point_clouds = model_point_clouds['pieces']
+
+    # Orient the model piece point clouds
+    oriented_model_piece_point_clouds = {}
+    main_axis = np.array([0, 1, 0]) # models sits on their side in the y direction
+    for color, models in model_piece_point_clouds.items():
+        oriented_model_piece_point_clouds[color] = {}
+        for name, pc in models.items():
+            oriented_pc = orient_cloud(pc, main_axis)
+            oriented_model_piece_point_clouds[color][name] = oriented_pc
+    
+    return oriented_model_piece_point_clouds
 
 def get_scene_point_cloud(diagram, context):
     # Get the clouds from the depth cameras
