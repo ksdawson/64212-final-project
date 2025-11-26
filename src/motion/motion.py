@@ -3,7 +3,7 @@ from pydrake.all import LeafSystem, BasicVector
 from pydrake.trajectories import PiecewisePolynomial
 from motion.kinematics import kinematic_traj_op
 
-def trajectory(q_knots, t = 10):
+def trajectory(q_knots, t = 1):
     # Spline: piecewise polynomial function
     # Knot: points where piecewise polynomial curves join together
     # This creates a time-parameterized spline in configuration space of our trajectory
