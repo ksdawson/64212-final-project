@@ -1,21 +1,5 @@
-import numpy as np
 from pydrake.all import LeafSystem, BasicVector
-from pydrake.trajectories import PiecewisePolynomial
-from motion.kinematics import kinematic_traj_op
-
-def trajectory(q_knots, t = 1):
-    # Spline: piecewise polynomial function
-    # Knot: points where piecewise polynomial curves join together
-    # This creates a time-parameterized spline in configuration space of our trajectory
-
-    # x = f(t)
-    x_lst = q_knots.T
-    t_lst = np.linspace(0, t, len(q_knots)) # pose samples over t seconds
-
-    # Build a 1D cubic spline
-    q_traj = PiecewisePolynomial.CubicShapePreserving(t_lst, x_lst)
-
-    return q_traj
+from motion.kinematics import kinematic_traj_op_per_pose, kinematic_traj_op
 
 class TrajectoryController(LeafSystem):
     def __init__(self, plant, num_joints=7):
@@ -35,20 +19,19 @@ class TrajectoryController(LeafSystem):
     def SetTrajectory(self, traj):
         self._traj = traj
 
-    def NextTrajectory(self, poses=None):
-        # If no poses then hold at pose
-        if poses is None:
+    def NextTrajectory(self, goal=None, poses=None):
+        # If no goal/poses then hold at pose
+        if goal is None and poses is None:
             self.SetTrajectory(None)
-        assert len(poses) >= 2, 'Need at least 2 poses'
 
         # Get iiwa joint positions interpolated along the trajectory
-        q_knots = kinematic_traj_op(self._plant, self._plant_context, poses)
-
-        # Exclude gripper joints
-        q_knots_iiwa = q_knots[:, 0:7]
-
-        # Build trajectory from joint positions
-        q_traj = trajectory(q_knots_iiwa)
+        if goal:
+            q_traj = kinematic_traj_op(self._plant, self._plant_context, goal)
+        elif poses:
+            assert len(poses) >= 2, 'Need at least 2 poses'
+            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses)
+        else:
+            raise Exception('Neigher goal or poses specified')
 
         # Command the traj to the controller
         self.SetTrajectory(q_traj)
