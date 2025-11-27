@@ -82,13 +82,24 @@ class Controller:
         # Get which iiwa to move
         iiwa_instance = self.game.get_turn()
         iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
+        iiwa_grasp_controller = self.iiwa1_grasp_controller if iiwa_instance == 1 else self.iiwa2_grasp_controller
 
         # Move to pick pose through a pre-pick pose
         rpy_down = RollPitchYaw(-np.pi/2, 0, 0)
         xyz = X_WG_pick.translation()
-        X_WG_prepick = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175])
+        X_WG_prepick = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
+
+        # Grasp: pick piece up at midpoint for better stability
         X_WG_pick.set_rotation(RotationMatrix(rpy_down))
-        X_WG_pick.set_translation([xyz[0], xyz[1], xyz[2] + 0.1])
+        X_WG_pick.set_translation([xyz[0], xyz[1], xyz[2] + 0.1 + 0.025]) # offset is 0.1, midpoint is 0.025
+        # TODO: play w/ midpoint
+
+        # Open gripper
+        iiwa_grasp_controller.SetGripper(0.025)
+
+        # Advance simulator
+        self.time += 1.0
+        simulator.AdvanceTo(self.time)
 
         # Move to pre-pick -> pick
         X_WStart = iiwa_traj_controller.get_current_pose()
@@ -98,6 +109,28 @@ class Controller:
         self.time += 5.0
         simulator.AdvanceTo(self.time)
 
-        # TODO Pick
+        # Close gripper
+        iiwa_grasp_controller.SetGripper(0.0) # max force
 
-        # TODO Move to place pose
+        # Advance simulator
+        self.time += 1.0
+        simulator.AdvanceTo(self.time)
+
+        # Move to pre-pick -> place
+        X_WStart = iiwa_traj_controller.get_current_pose()
+        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_place], traj_t=5.0)
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], traj_t=5.0)
+
+        # Advance simulator
+        self.time += 5.0
+        simulator.AdvanceTo(self.time)
+
+        print(X_WG_prepick)
+        print(X_WG_pick)
+        print(X_WG_place)
+
+        #
+        X_WStart = iiwa_traj_controller.get_current_pose()
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_place], traj_t=5.0)
+        self.time += 5.0
+        simulator.AdvanceTo(self.time)
