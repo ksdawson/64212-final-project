@@ -1,4 +1,6 @@
 import chess
+import numpy as np
+from pydrake.all import RigidTransform, RollPitchYaw, RotationMatrix
 from perception.perception import perception
 from perception.point_cloud import get_oriented_piece_model_pcs
 from game.utils import Game
@@ -70,22 +72,32 @@ class Controller:
         from_square_name = chess.square_name(from_square)
         piece = self.game.get_piece_at(from_square)
         # start_poses = piece_poses[piece]
-        start_pose = self.game.square_to_pose(from_square_name)
+        X_WG_pick = self.game.square_to_pose(from_square_name)
 
         # Get goal pose
         to_square = move.to_square
         to_square_name = chess.square_name(to_square)
-        goal_pose = self.game.square_to_pose(to_square_name)
+        X_WG_place = self.game.square_to_pose(to_square_name)
 
         # Get which iiwa to move
         iiwa_instance = self.game.get_turn()
         iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
 
-        # Move to pick pose
-        self.time += 1.0
-        iiwa_traj_controller.NextTrajectory(goal=start_pose)
+        # Move to pick pose through a pre-pick pose
+        rpy_down = RollPitchYaw(-np.pi/2, 0, 0)
+        xyz = X_WG_pick.translation()
+        X_WG_prepick = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175])
+        X_WG_pick.set_rotation(RotationMatrix(rpy_down))
+        X_WG_pick.set_translation([xyz[0], xyz[1], xyz[2] + 0.1])
+
+        # Move to pre-pick -> pick
+        X_WStart = iiwa_traj_controller.get_current_pose()
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], traj_t=5.0)
+
+        # Advance simulator
+        self.time += 5.0
         simulator.AdvanceTo(self.time)
 
-        # TODO Move to place pose
+        # TODO Pick
 
-        print(iiwa_instance, piece, from_square_name, to_square_name, move, start_pose, goal_pose)
+        # TODO Move to place pose

@@ -16,20 +16,24 @@ class TrajectoryController(LeafSystem):
             self.CalcOutput
         )
 
+    def get_current_pose(self):
+        X_WStart = self._plant.EvalBodyPoseInWorld(self._plant_context, self._plant.GetBodyByName('body'))
+        return X_WStart
+
     def SetTrajectory(self, traj):
         self._traj = traj
 
-    def NextTrajectory(self, goal=None, poses=None):
+    def NextTrajectory(self, goal=None, poses=None, traj_t=5.0):
         # If no goal/poses then hold at pose
         if goal is None and poses is None:
             self.SetTrajectory(None)
 
         # Get iiwa joint positions interpolated along the trajectory
         if goal:
-            q_traj = kinematic_traj_op(self._plant, self._plant_context, goal)
+            q_traj = kinematic_traj_op(self._plant, self._plant_context, goal, traj_t)
         elif poses:
             assert len(poses) >= 2, 'Need at least 2 poses'
-            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses)
+            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, traj_t)
         else:
             raise Exception('Neigher goal or poses specified')
 
