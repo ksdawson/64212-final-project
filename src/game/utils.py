@@ -1,84 +1,128 @@
-# Constants
-FILES = ['a','b','c','d','e','f','g','h']
-RANKS = ['1','2','3','4','5','6','7','8']
+import chess
+from pydrake.all import RigidTransform
 
 # Utils
 def square_to_index(square):
     file = square[0] # a–h
     rank = square[1] # 1–8
     file_idx = ord(file) - ord('a')
-    rank_idx = 8 - int(rank)
+    rank_idx = int(rank) - 1
     return rank_idx, file_idx
 
-# Starting board setup
-def get_starting_board():
-    def file_to_piece(file):
-        if file in {'a','h'}: return 'R' # Rook
-        if file in {'b','g'}: return 'N' # Knight
-        if file in {'c','f'}: return 'B' # Bishop
-        if file == 'd': return 'Q' # Queen
-        if file == 'e': return 'K' # King
-        return ''
-    board = [['' for _ in range(8)] for _ in range(8)]
-    for file in FILES:
-        for rank in RANKS:
-            if rank in {'1','2'}:
-                piece = ('P' if rank == '2' else file_to_piece(file))
-            elif rank in {'7','8'}:
-                piece = ('P' if rank == '7' else file_to_piece(file))
-                piece = piece.lower()
-            else:
-                piece = ''
-            rank_idx, file_idx = square_to_index(file + rank)
-            board[rank_idx][file_idx] = piece
-    return board
+def index_to_square(rank_idx, file_idx):
+    file = chr(file_idx + ord('a'))
+    rank = str(rank_idx + 1)
+    return file + rank
 
 class Game:
     def __init__(self):
-        # Create board state
-        self.board = get_starting_board()
-        self.turn = 'w'
+        # Game state
+        self.board = chess.Board()
+
+        # Game in the simulation
+        self.sq_size = 0.047
+        self.board_xyz = (0, 0, 0.527262)
+        self.board_size = self.sq_size * 8
+        self.piece_size = 0.028626
+
+    def get_turn(self):
+        return 2 if self.board.turn == chess.WHITE else 1
+
+    def is_capture_move(self, move):
+        return self.board.is_capture(move)
+
+    def get_piece_at(self, square):
+        piece = self.board.piece_at(square)
+        return piece.symbol()
+
+    def get_move(self):
+        legal_moves = self.board.legal_moves
+        move = next(iter(legal_moves)) 
+        return move
+
+    def make_move(self, move_str):
+        move = self.board.parse_san(move_str)
+        self.board.push(move)
+
+    def pose_to_square(self, pose):
+        # Get xyz
+        pos = pose.translation()
+        x, y, z = pos[0], pos[1], pos[2]
+
+        # Check piece is on board
+        half_size = self.board_size / 2
+        assert self.board_xyz[0] - half_size <= x <= self.board_xyz[0] + half_size, 'Piece not on board in x-dim'
+        assert self.board_xyz[1] - half_size <= y <= self.board_xyz[1] + half_size, 'Piece not on board in y-dim'
+        assert z >= self.board_xyz[2], 'Piece below board'
+        
+        # Center bottom-left corner (+x, +y -> a1) at 0, 0
+        x_offset = -x + half_size
+        y_offset = -y + half_size
+
+        # Compute file and rank indices (0–7)
+        file_idx = int(x_offset / self.sq_size)
+        rank_idx = int(y_offset / self.sq_size)
+
+        # Clamp indices
+        file_idx = min(max(file_idx, 0), 7)
+        rank_idx = min(max(rank_idx, 0), 7)
+
+        # Convert indices to square
+        return index_to_square(rank_idx, file_idx)
     
-    def make_move(self, move):
-        # Get move
-        start, end = move[:2], move[2:]
+    def square_to_pose(self, square):
+        # Get abs location on board
+        rank_idx, file_idx = square_to_index(square)
 
-        # Convert move to indices
-        sr, sc = square_to_index(start)
-        er, ec = square_to_index(end)
+        # Get x, y
+        half_size = self.board_size / 2
+        x = half_size - (file_idx + 0.5) * self.sq_size
+        y = half_size - (rank_idx + 0.5) * self.sq_size
 
-        # Get piece to move
-        piece = self.board[sr][sc]
-        if piece == '':
-            raise ValueError(f'No piece on {start}')
+        # Build pose
+        z = self.board_xyz[2]
+        pose = RigidTransform()
+        pose.set_translation([x, y, z])
+        return pose
 
-        # Move piece
-        self.board[er][ec] = piece
-        self.board[sr][sc] = ''
+    def check_game_state(self, piece_poses):
+        # Convert poses to squares
+        piece_squares = {piece: [self.pose_to_square(pose) for pose in poses] for piece, poses in piece_poses.items()}
 
-        return piece
-    
-    def __str__(self):
-        strs = ['\n  +------------------------+']
-        for r in range(8):
-            rank_label = 8 - r
-            row_str = f'{rank_label} |'
-            for c in range(8):
-                piece = self.board[r][c]
-                row_str += ' . ' if piece == '' else f' {piece} '
-            row_str += '|'
-            strs.append(row_str)
-        strs.append('  +------------------------+')
-        strs.append('    a  b  c  d  e  f  g  h\n')
-        return '\n'.join(strs)
-
-def get_game_square_poses():
-    z = 0.527262
-    sq_size = 0.047
-    rank = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-    file = ['1', '2', '3', '4', '5', '6', '7', '8']
-    board = {}
+        # Check game state is correct
+        for piece, squares in piece_squares.items():
+            for square in squares:
+                actual_piece = str(self.board.piece_at(chess.parse_square(square)))
+                # assert piece == actual_piece, f'Incorrect piece {piece} at {square} (actually {actual_piece})'
+                if piece != actual_piece:
+                    print(f'Incorrect piece {piece} at {square} (actually {actual_piece})')
 
 if __name__ == '__main__':
+    # Game
     game = Game()
-    print(game)
+    print(game.board)
+
+    # Example piece
+    pose = RigidTransform()
+    pose.set_translation([0.04 * 4, 0.04 * 4, 0.6])
+
+    pose1 = RigidTransform()
+    pose1.set_translation([-0.04 * 3, 0.04 * 4, 0.6])
+
+    # Test pose to square
+    print(game.pose_to_square(pose))
+    print(game.pose_to_square(pose1))
+
+    # Test turn
+    poses = {'R': [pose]}
+    game.check_game_state(poses)
+
+    # Test square to pose
+    print(game.square_to_pose('a1'))
+    print(game.square_to_pose('g1'))
+
+    # Check convert functions
+    sq = index_to_square(0, 0)
+    print(sq)
+    r, f = square_to_index('a1')
+    print(r, f)

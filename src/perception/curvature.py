@@ -1,7 +1,7 @@
 import numpy as np
 from perception.bounding_box import orient_cloud
 
-def compute_rz_profile(point_cloud, num_slices=20):
+def compute_rz_profile(point_cloud, num_slices=100):
     cloud = point_cloud.xyzs().T
     xy = cloud[:, :2] - np.mean(cloud[:, :2], axis=0)
     z = cloud[:, 2]

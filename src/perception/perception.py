@@ -173,7 +173,7 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, scene_
     assert set(model_names) == set(PIECE_COUNTS.keys()), 'Incorrect model names'
 
     # Build cost matrix (scene_count x model_count)
-    cost = np.zeros((len(scene_point_clouds), len(model_point_clouds)))
+    cost = np.zeros((len(scene_point_clouds), len(model_point_clouds), 2))
 
     # Partially fill in the cost matrix using the unique scene, model pairs
     for i, scene_pc in enumerate(scene_point_clouds):
@@ -184,29 +184,19 @@ def match_scene_to_model_cloud_bb(scene_point_clouds, model_point_clouds, scene_
                 bb_similarity = cloud_oriented_bounding_box_similarity(scene_pc, model_pc, scene_main_axis, None)
             else:
                 bb_similarity = cloud_bounding_box_similarity(scene_pc, model_pc)
-            cost[i, j] = bb_similarity
-
-    # Check if tie breakers are needed
-    ABS_TIE_THRESHOLD = 0.002
-    REL_TIE_THRESHOLD = 0.25
-    # TODO: Could include rz similarity directly in the objective
-    for i, scene_pc in enumerate(scene_point_clouds):
-        bb_sims = cost[i, :]
-        sorted_idx = np.argsort(bb_sims)
-        top1_idx, top2_idx = sorted_idx[0], sorted_idx[1]
-        top1_bb, top2_bb = bb_sims[top1_idx], bb_sims[top2_idx]
-        # TODO: Could consider more than just the top2 like "top_candidates = np.where(np.abs(bb_sims - bb_sims.min()) < TIE_THRESHOLD)[0]"
-        # if (top2_bb - top1_bb) / top1_bb < REL_TIE_THRESHOLD and abs(top1_bb - top2_bb) < ABS_TIE_THRESHOLD: # More conservative
-        if abs(top1_bb - top2_bb) < ABS_TIE_THRESHOLD:
-            # Only adjust if close enough
-            scene_pc = scene_point_clouds[i]
-            scene_main_axis = scene_main_axes[i] if scene_main_axes is not None else get_piece_cloud_main_axis(scene_pc)
-            rz_sim_top1 = cloud_oriented_rz_similarity(scene_pc, model_point_clouds[model_names[top1_idx]], scene_main_axis, None)
-            rz_sim_top2 = cloud_oriented_rz_similarity(scene_pc, model_point_clouds[model_names[top2_idx]], scene_main_axis, None)
-            if rz_sim_top2 < rz_sim_top1:
-                # Swap top candidates
-                bb_sims[top1_idx], bb_sims[top2_idx] = bb_sims[top2_idx], bb_sims[top1_idx]
-                cost[i, :] = bb_sims
+            rz_similarity = cloud_oriented_rz_similarity(scene_pc, model_pc, scene_main_axis, None)
+            cost[i, j] = np.array((bb_similarity, rz_similarity))
+    
+    # Normalize both scores
+    max_bb_similarity, max_rz_similarity = np.max(cost[:,:,0]), np.max(cost[:,:,1])
+    cost[:,:,0] /= max_bb_similarity
+    cost[:,:,1] /= max_rz_similarity
+    
+    # Avg the two scores
+    cost = cost.mean(axis=2)
+    # w_bb = 0.9
+    # w_rz = 0.1
+    # cost = w_bb * cost[:,:,0] + w_rz * cost[:,:,1]
 
     # Expand cost matrix using PIECE_COUNTS
     expanded_model_names = []
@@ -296,13 +286,9 @@ def perception(diagram, context, model_piece_pcs, debugging=False):
     # Build the mapping of piece color, type to pose
     result = {'dark': {}, 'light': {}}
     for i, piece in enumerate(dark_piece_types):
-        if piece not in result['dark']:
-            result['dark'][piece] = []
-        result['dark'][piece].append(dark_piece_poses[i])
+        result['dark'][piece] = dark_piece_poses[i]
     for i, piece in enumerate(light_piece_types):
-        if piece not in result['light']:
-            result['light'][piece] = []
-        result['light'][piece].append(light_piece_poses[i])
+        result['light'][piece] = light_piece_poses[i]
     state = {'poses': result}
 
     # Return more info if simulation debugging
@@ -312,13 +298,9 @@ def perception(diagram, context, model_piece_pcs, debugging=False):
         # Add piece clouds by color, piece
         pcs = {'dark': {}, 'light': {}}
         for i, piece in enumerate(dark_piece_types):
-            if piece not in pcs['dark']:
-                pcs['dark'][piece] = []
-            pcs['dark'][piece].append(dark_piece_pcs[i])
+            pcs['dark'][piece] = dark_piece_pcs[i]
         for i, piece in enumerate(light_piece_types):
-            if piece not in pcs['light']:
-                pcs['light'][piece] = []
-            pcs['light'][piece].append(light_piece_pcs[i])
+            pcs['light'][piece] = light_piece_pcs[i]
         state['piece_pcs'] = pcs
 
     return state

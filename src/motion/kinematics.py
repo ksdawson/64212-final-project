@@ -2,7 +2,8 @@ import numpy as np
 from pydrake.all import (
     RotationMatrix,
     Solve,
-    PositionConstraint
+    PositionConstraint,
+    OrientationConstraint
 )
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.planning import KinematicTrajectoryOptimization
@@ -21,6 +22,42 @@ def trajectory(q_knots, t = 1):
     q_traj = PiecewisePolynomial.CubicShapePreserving(t_lst, x_lst)
 
     return q_traj
+
+def inverse_kinematics(plant, plant_context, pose, q_nominal=None):
+    # Get frames
+    world_frame = plant.world_frame()
+    gripper_frame = plant.GetFrameByName('body')
+
+    # Setup IK
+    ik = InverseKinematics(plant, plant_context)
+    q_variables = ik.q()
+    prog = ik.prog()
+
+    # Set prog cost and initial guess
+    if q_nominal is not None:
+        prog.AddQuadraticErrorCost(np.identity(len(q_variables)), q_nominal, q_variables)
+        prog.SetInitialGuess(q_variables, q_nominal)
+
+    # Set IK constraints
+    ik.AddOrientationConstraint(
+        gripper_frame,
+        RotationMatrix(),
+        world_frame,
+        pose.rotation(),
+        0.01*np.pi
+    )
+    ik.AddPositionConstraint(
+        gripper_frame,
+        [0, 0, 0],
+        world_frame,
+        pose.translation() - np.array([0.001, 0.001, 0.001]),
+        pose.translation() + np.array([0.001, 0.001, 0.001])
+    )
+
+    # Solve the IK OP
+    result = Solve(prog)
+    assert result.is_success(), 'KTO solve failed'
+    return result.GetSolution(q_variables)
 
 def kinematic_traj_op_per_pose(plant, plant_context, pose_lst):
     # Get frames
@@ -113,6 +150,28 @@ def kinematic_traj_op(plant, plant_context, X_WGoal):
     # Add position constraints as path position constraints
     trajopt.AddPathPositionConstraint(pos_const_start, s=0.0)
     trajopt.AddPathPositionConstraint(pos_const_goal, s=1.0)
+
+    # # Add orientation constraints
+    # orient_const_start = OrientationConstraint(
+    #     plant,
+    #     world_frame,
+    #     RotationMatrix(),
+    #     gripper_frame,
+    #     X_WStart.rotation(),
+    #     0.5,
+    #     plant_context
+    # )
+    # orient_const_goal = OrientationConstraint(
+    #     plant,
+    #     world_frame,
+    #     RotationMatrix(),
+    #     gripper_frame,
+    #     X_WGoal.rotation(),
+    #     0.5,
+    #     plant_context
+    # )
+    # trajopt.AddPathPositionConstraint(orient_const_start, s=0.0)
+    # trajopt.AddPathPositionConstraint(orient_const_goal, s=1.0)
 
     # Add position and velocity bounds to ensure the traj sol respects the hardware's limits
     pos_lower, pos_upper = plant.GetPositionLowerLimits(), plant.GetPositionUpperLimits()
