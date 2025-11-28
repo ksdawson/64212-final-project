@@ -60,7 +60,7 @@ directives:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, -0.75, 0.01]
+            translation: [0, -0.6, 0.01]
             rotation: !Rpy {{ deg: [0, 0, 180] }}
     - add_model:
         name: wsg1
@@ -86,7 +86,7 @@ directives:
         parent: world
         child: iiwa2::iiwa_link_0
         X_PC:
-            translation: [0, 0.75, 0.01]
+            translation: [0, 0.6, 0.01]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg2

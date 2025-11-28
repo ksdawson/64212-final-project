@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from pydrake.all import (
-    Rgba, RigidTransform, Box, PointCloud
+    Rgba, RigidTransform, Box, PointCloud, Sphere
 )
 
 ######################################################################
@@ -54,3 +54,35 @@ def visualize_text(meshcat, text, pose=RigidTransform(), name=None,
         name = f'/text_cloud/{text}'
     meshcat.SetObject(name, pc, point_size=point_size, rgba=color)
     meshcat.SetTransform(name, pose)
+
+def visualize_iiwa_reachability(meshcat, plant, N=3000):
+    ctx = plant.CreateDefaultContext()
+    ee_frame = plant.GetFrameByName('body')
+
+    # Joint limits
+    lower = []
+    upper = []
+    for i in range(7):
+        lim = plant.GetJointByName(f'iiwa_joint_{i+1}')
+        lower.append(lim.position_lower_limits()[0])
+        upper.append(lim.position_upper_limits()[0])
+    lower = np.array(lower)
+    upper = np.array(upper)
+
+    positions = []
+
+    for i in range(N):
+        q = lower + np.random.rand(len(lower)) * (upper - lower)
+        q = np.hstack((q, np.array([0.,0.])))
+        plant.SetPositions(ctx, q)
+
+        X_WE = plant.EvalBodyPoseInWorld(ctx, ee_frame.body())
+        positions.append(X_WE.translation())
+
+    # Plot all points as tiny spheres
+    for i, p in enumerate(positions):
+        path = f'/reachability/{i}'
+        meshcat.SetObject(path, Sphere(0.01))
+        meshcat.SetTransform(path, RigidTransform(p))
+
+    print(f'Reachability visualization complete. Limits: {lower}, {upper}')

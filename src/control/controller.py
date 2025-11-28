@@ -48,7 +48,7 @@ class Controller:
         piece_poses = self.get_piece_poses()
 
         # Check board state
-        self.game.check_game_state(piece_poses)
+        # self.game.check_game_state(piece_poses)
 
         # Get a move
         move = self.game.get_move()
@@ -123,10 +123,6 @@ class Controller:
         self.time += 5.0
         simulator.AdvanceTo(self.time)
 
-        print(X_WG_prepick)
-        print(X_WG_pick)
-        print(X_WG_place)
-
         # Move to place pose through a pre-place pose
         xyz = X_WG_place.translation()
         X_WG_preplace = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
@@ -137,8 +133,6 @@ class Controller:
         X_WStart = iiwa_traj_controller.get_current_pose()
         # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], traj_t=5.0)
         iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], orientation_config=orientation_config, traj_t=5.0)
-        self.time += 5.0
-        simulator.AdvanceTo(self.time)
 
         # Advance simulator
         self.time += 5.0
