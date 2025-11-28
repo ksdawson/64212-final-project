@@ -94,9 +94,9 @@ class Controller:
         # Get intermediate poses
         rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
         pick_xyz = X_WG_pick.translation()
-        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 0.075*2]) # offset is 0.1, max piece height is 0.075
+        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
         place_xyz = X_WG_place.translation()
-        X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.1 + 0.075*2])
+        X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.175])
 
         # Adjust end poses
         X_WG_pick.set_rotation(rpy_down)
@@ -106,6 +106,7 @@ class Controller:
 
         # Go home if not at home
         if not poses_equal(X_WG_start, iiwa_X_WG_home):
+            print('Moving home')
             self.move(iiwa_instance, poses=[X_WG_start, iiwa_X_WG_home])
         print('Home')
 
@@ -135,7 +136,7 @@ class Controller:
         print('Gripper opened')
 
         # Go to pre-place -> home
-        self.move(iiwa_instance, poses=[X_WG_place, X_WG_preplace, X_WG_start]) # TODO: just reverse the previous traj
+        self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
         print('Pre-place to home')
         
     def control_loop(self, simulator):
