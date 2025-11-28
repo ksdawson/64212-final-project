@@ -9,6 +9,25 @@ from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.planning import KinematicTrajectoryOptimization
 from pydrake.trajectories import PiecewisePolynomial
 
+def reverse_traj(traj):
+    # Original time span
+    t_start = traj.start_time()
+    t_end = traj.end_time()
+    
+    # Sample the trajectory at the original knot times
+    t_knots = traj.get_segment_times()
+    q_knots = np.column_stack([traj.value(t) for t in t_knots])
+    
+    # Reverse the knot order
+    q_knots_rev = q_knots[:, ::-1]
+    
+    # Create new times that go forward but map reversed poses
+    t_new = np.linspace(t_start, t_end, len(t_knots))
+    
+    # Build new trajectory
+    traj_rev = PiecewisePolynomial.CubicShapePreserving(t_new, q_knots_rev)
+    return traj_rev
+
 def trajectory(q_knots, t = 5):
     # Spline: piecewise polynomial function
     # Knot: points where piecewise polynomial curves join together
@@ -23,7 +42,7 @@ def trajectory(q_knots, t = 5):
 
     return q_traj
 
-def inverse_kinematics(plant, plant_context, pose, q_nominal=None):
+def inverse_kinematics(plant, plant_context, pose, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
     # Get frames
     world_frame = plant.world_frame()
     gripper_frame = plant.GetFrameByName('body')
@@ -44,14 +63,14 @@ def inverse_kinematics(plant, plant_context, pose, q_nominal=None):
         RotationMatrix(),
         world_frame,
         pose.rotation(),
-        0.01*np.pi
+        rot_tol*np.pi
     )
     ik.AddPositionConstraint(
         gripper_frame,
         [0, 0, 0],
         world_frame,
-        pose.translation() - np.array([0.001, 0.001, 0.001]),
-        pose.translation() + np.array([0.001, 0.001, 0.001])
+        pose.translation() - np.full(3, pos_tol),
+        pose.translation() + np.full(3, pos_tol)
     )
 
     # Solve the IK OP
@@ -59,7 +78,7 @@ def inverse_kinematics(plant, plant_context, pose, q_nominal=None):
     assert result.is_success(), 'KTO solve failed'
     return result.GetSolution(q_variables)
 
-def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None):
+def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
     # Get frames
     world_frame = plant.world_frame()
     gripper_frame = plant.GetFrameByName('body')
@@ -81,14 +100,14 @@ def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis
         world_frame,
         world_axis,
         0.0, # min angle (0 = perfectly aligned)
-        0.01*np.pi # max angle (1.8deg)
+        rot_tol*np.pi # max angle
     )
     ik.AddPositionConstraint(
         gripper_frame,
         [0, 0, 0],
         world_frame,
-        pose.translation() - np.array([0.001, 0.001, 0.001]),
-        pose.translation() + np.array([0.001, 0.001, 0.001])
+        pose.translation() - np.full(3, pos_tol),
+        pose.translation() + np.full(3, pos_tol)
     )
 
     # Solve the IK OP
