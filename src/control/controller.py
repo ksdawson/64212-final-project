@@ -40,14 +40,6 @@ class Controller:
                 formatted_piece_poses[name].append(piece_poses[color][piece])
 
         return formatted_piece_poses
-    
-    def set_iiwa_next_traj(self, iiwa_index, goal=None, poses=None):
-        if iiwa_index == 1:
-            self.iiwa1_traj_controller.NextTrajectory(goal, poses)
-        elif iiwa_index == 2:
-            self.iiwa2_traj_controller.NextTrajectory(goal, poses)
-        else:
-            raise Exception('iiwa index must be 1 or 2')
         
     def control_loop(self, simulator):
         # Called once every simulation step
@@ -101,9 +93,15 @@ class Controller:
         self.time += 1.0
         simulator.AdvanceTo(self.time)
 
+        # Axis-aligned orientation constraint
+        gripper_approach = [0, 1, 0] # gripper +y axis (approach axis)
+        world_axis = [0, 0, -1] # world downward direction (-z)
+        orientation_config = {'type': 'axis', 'gripper_axis': gripper_approach, 'world_axis': world_axis}
+
         # Move to pre-pick -> pick
         X_WStart = iiwa_traj_controller.get_current_pose()
-        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], traj_t=5.0)
+        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], traj_t=5.0)
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], orientation_config=orientation_config, traj_t=5.0)
 
         # Advance simulator
         self.time += 5.0
@@ -116,10 +114,10 @@ class Controller:
         self.time += 1.0
         simulator.AdvanceTo(self.time)
 
-        # Move to pre-pick -> place
+        # Move to pre-pick
         X_WStart = iiwa_traj_controller.get_current_pose()
-        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_place], traj_t=5.0)
-        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], traj_t=5.0)
+        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], traj_t=5.0)
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], orientation_config=orientation_config, traj_t=5.0)
 
         # Advance simulator
         self.time += 5.0
@@ -129,8 +127,26 @@ class Controller:
         print(X_WG_pick)
         print(X_WG_place)
 
-        #
+        # Move to place pose through a pre-place pose
+        xyz = X_WG_place.translation()
+        X_WG_preplace = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
+        X_WG_place.set_rotation(RotationMatrix(rpy_down))
+        X_WG_place.set_translation([xyz[0], xyz[1], xyz[2] + 0.1 + 0.025]) # offset is 0.1, midpoint is 0.025
+
+        # Move to pre-place -> place
         X_WStart = iiwa_traj_controller.get_current_pose()
-        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_place], traj_t=5.0)
+        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], traj_t=5.0)
+        iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], orientation_config=orientation_config, traj_t=5.0)
         self.time += 5.0
+        simulator.AdvanceTo(self.time)
+
+        # Advance simulator
+        self.time += 5.0
+        simulator.AdvanceTo(self.time)
+
+        # Open gripper
+        iiwa_grasp_controller.SetGripper(0.025)
+
+        # Advance simulator
+        self.time += 1.0
         simulator.AdvanceTo(self.time)

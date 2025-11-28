@@ -59,7 +59,44 @@ def inverse_kinematics(plant, plant_context, pose, q_nominal=None):
     assert result.is_success(), 'KTO solve failed'
     return result.GetSolution(q_variables)
 
-def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, traj_t):
+def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None):
+    # Get frames
+    world_frame = plant.world_frame()
+    gripper_frame = plant.GetFrameByName('body')
+
+    # Setup IK
+    ik = InverseKinematics(plant, plant_context)
+    q_variables = ik.q()
+    prog = ik.prog()
+
+    # Set prog cost and initial guess
+    if q_nominal is not None:
+        prog.AddQuadraticErrorCost(np.identity(len(q_variables)), q_nominal, q_variables)
+        prog.SetInitialGuess(q_variables, q_nominal)
+
+    # Set IK constraints
+    ik.AddAngleBetweenVectorsConstraint(
+        gripper_frame,
+        gripper_axis,
+        world_frame,
+        world_axis,
+        0.0, # min angle (0 = perfectly aligned)
+        0.01*np.pi # max angle (1.8deg)
+    )
+    ik.AddPositionConstraint(
+        gripper_frame,
+        [0, 0, 0],
+        world_frame,
+        pose.translation() - np.array([0.001, 0.001, 0.001]),
+        pose.translation() + np.array([0.001, 0.001, 0.001])
+    )
+
+    # Solve the IK OP
+    result = Solve(prog)
+    assert result.is_success(), 'KTO solve failed'
+    return result.GetSolution(q_variables)
+
+def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, orientation_config, traj_t):
     # Nominal joint angles for joint-centering
     q_nominal = plant.GetPositions(plant_context)
 
@@ -68,7 +105,12 @@ def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, traj_t):
     q_knots = [q_nominal] # Include start
     for pose in pose_lst:
         # Run IK
-        result = inverse_kinematics(plant, plant_context, pose, q_nominal)
+        if orientation_config is None or orientation_config['type'] == 'full':
+            result = inverse_kinematics(plant, plant_context, pose, q_nominal=q_nominal)
+        elif orientation_config['type'] == 'axis':
+            result = inverse_kinematics_axis(plant, plant_context, pose, orientation_config['gripper_axis'], orientation_config['world_axis'], q_nominal=q_nominal)
+        else:
+            raise Exception('Orientation type is full or axis alignment')
         q_knots.append(result)
 
         # Set q nominal for the next IK
