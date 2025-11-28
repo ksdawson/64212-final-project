@@ -50,11 +50,11 @@ directives:
         file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [-1.57]
-            iiwa_joint_2: [0.1]
+            iiwa_joint_2: [-0.2]
             iiwa_joint_3: [0]
-            iiwa_joint_4: [-1.2]
+            iiwa_joint_4: [-1.5]
             iiwa_joint_5: [0]
-            iiwa_joint_6: [ 1.6]
+            iiwa_joint_6: [1.6]
             iiwa_joint_7: [0]
     - add_weld:
         parent: world
@@ -76,11 +76,11 @@ directives:
         file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [-1.57]
-            iiwa_joint_2: [0.1]
+            iiwa_joint_2: [-0.2]
             iiwa_joint_3: [0]
-            iiwa_joint_4: [-1.2]
+            iiwa_joint_4: [-1.5]
             iiwa_joint_5: [0]
-            iiwa_joint_6: [ 1.6]
+            iiwa_joint_6: [1.6]
             iiwa_joint_7: [0]
     - add_weld:
         parent: world
