@@ -45,8 +45,6 @@ model_drivers:
     wsg1: !SchunkWsgDriver {{}}
     default: !ZeroForceDriver {{}}
 '''
-PLANT = None
-PLANT_CONTEXT = None
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
     # Create scenario
@@ -64,29 +62,20 @@ def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
     builder.AddSystem(station)
     diagram = builder.Build()
 
-    # Get the plant and context
-    context = diagram.CreateDefaultContext()
-    plant = station.plant()
-    plant_context = diagram.GetSubsystemContext(plant, context)
-
-    # Set global vars
-    global PLANT, PLANT_CONTEXT
-    PLANT = plant
-    PLANT_CONTEXT = plant_context
-
     return diagram, station
 
 def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
-    # Set the plant positions
-    q = np.zeros(PLANT.num_positions())
-    q[:7] = [j1, j2, j3, j4, j5, j6, j7]
-    PLANT.SetPositions(PLANT_CONTEXT, q)
-    q_nominal = q[:7]
+    # Get the plant and context
+    diagram, station = setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7)
+    context = diagram.CreateDefaultContext()
+    plant = station.plant()
+    plant_context = diagram.GetSubsystemContext(plant, context)
 
     # Create a game
     game = Game()
 
     # Run IK to each square
+    q_nominal = plant.GetPositions(plant_context)
     score = 0 # each success gets +1
     for file_idx in range(ord('a'), ord('h') + 1):
         file = chr(file_idx)
@@ -101,14 +90,11 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
             # Construct the pre-pick pose
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_xyz = X_WG_pick.translation()
-            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1] - base_dist, pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
-
-            # X_offset = RigidTransform([0, -base_dist, 0])
-            # X_WG_prepick = X_offset @ RigidTransform(rpy_down, pick_xyz + np.array([0, 0, 0.175])) # offset to gripper origin is 0.1, max piece height is 0.075
+            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
 
             # Run IK
             try:
-                result = inverse_kinematics(PLANT, PLANT_CONTEXT, X_WG_prepick, q_nominal=q_nominal)
+                result = inverse_kinematics(plant, plant_context, X_WG_prepick, q_nominal=q_nominal)
                 score += 1
             except:
                 continue
@@ -118,7 +104,7 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
 
     return score
 
-def bayesian_optimization(n_iter=50):
+def bayesian_optimization(init_points=15, n_iter=50):
     # Bounded region of parameter space
     pbounds = {
         'base_dist': (-1.0, -0.6),
@@ -148,7 +134,7 @@ def bayesian_optimization(n_iter=50):
     # Run BO
     utility = UtilityFunction(kind='ei', xi=0.01) # better for expensive noisy functions
     optimizer.maximize(
-        init_points=15,
+        init_points=init_points,
         n_iter=n_iter,
         acquisition_function=utility
     )
@@ -159,7 +145,7 @@ def bayesian_optimization(n_iter=50):
 
 if __name__ == '__main__':
     # Get the bounds of the iiwa
-    diagram, station = setup_station(0, 0, 0, 0, 0, 0, 0, 0)
+    # diagram, station = setup_station(0, 0, 0, 0, 0, 0, 0, 0)
     # plant = station.plant()
     # lower = plant.GetPositionLowerLimits()
     # upper = plant.GetPositionUpperLimits()
@@ -167,11 +153,11 @@ if __name__ == '__main__':
     
     # Run bayesian optimization to find best starting configuration
     start = time.time()
-    result = bayesian_optimization(n_iter=3)
+    result = bayesian_optimization(n_iter=50)
     end = time.time()
 
     # Print results
-    duration = round(end - start, 50)
+    duration = round(end - start, 3)
     print(f'Bayesian optimization finished in {duration} s')
     score = round(result['target'] * 64)
     print(f'Score: {score}')
