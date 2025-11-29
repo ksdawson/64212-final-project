@@ -38,12 +38,6 @@ directives:
         X_PC:
             translation: [0, 0, 0.09]
             rotation: !Rpy {{ deg: [90, 0, 90] }}
-model_drivers:
-    iiwa1: !IiwaDriver
-        control_mode: position_only
-        hand_model_name: wsg1
-    wsg1: !SchunkWsgDriver {{}}
-    default: !ZeroForceDriver {{}}
 '''
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
@@ -107,7 +101,7 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
 def bayesian_optimization(init_points=15, n_iter=50):
     # Bounded region of parameter space
     pbounds = {
-        'base_dist': (-1.0, -0.6),
+        'base_dist': (-1.0, -0.5),
         'j1': (-2.96706, 2.96706),
         'j2': (-2.0944, 2.0944),
         'j3': (-2.96706, 2.96706),
@@ -153,7 +147,7 @@ if __name__ == '__main__':
     
     # Run bayesian optimization to find best starting configuration
     start = time.time()
-    result = bayesian_optimization(n_iter=50)
+    result = bayesian_optimization(init_points=30, n_iter=100)
     end = time.time()
 
     # Print results
