@@ -73,6 +73,7 @@ def inverse_kinematics(plant, plant_context, pose, q_nominal=None, pos_tol=0.001
         pose.translation() - np.full(3, pos_tol),
         pose.translation() + np.full(3, pos_tol)
     )
+    # ik.AddMinimumDistanceLowerBoundConstraint(0.001, 0.01)
 
     # Solve the IK OP
     result = Solve(prog)
@@ -110,6 +111,7 @@ def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis
         pose.translation() - np.full(3, pos_tol),
         pose.translation() + np.full(3, pos_tol)
     )
+    # ik.AddMinimumDistanceLowerBoundConstraint(0.001, 0.01)
 
     # Solve the IK OP
     result = Solve(prog)

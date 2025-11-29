@@ -47,7 +47,7 @@ directives:
         child: floor::link
     - add_model:
         name: iiwa1
-        file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [-1.57]
             iiwa_joint_2: [-0.2]
@@ -73,7 +73,7 @@ directives:
             rotation: !Rpy {{ deg: [90, 0, 90] }}
     - add_model:
         name: iiwa2
-        file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [-1.57]
             iiwa_joint_2: [-0.2]
@@ -226,6 +226,7 @@ def create_scenario():
 
     # Get chessboard
     chessboard_path = f'{current_directory}/{chess_assets_directory}/chessboard/model.sdf'
+    print(floor_path, table_path, chessboard_path)
 
     # Get pieces
     piece_poses = get_pieces_poses()

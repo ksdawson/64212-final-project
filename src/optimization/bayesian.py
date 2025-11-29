@@ -6,15 +6,21 @@ from pydrake.all import (
     DiagramBuilder, RollPitchYaw, RotationMatrix, RigidTransform
 )
 from manipulation.station import LoadScenario, MakeHardwareStation
-from motion.kinematics import inverse_kinematics
+from motion.kinematics import inverse_kinematics, inverse_kinematics_axis
 from game.utils import Game
 
 # Global vars
 BASE_SCENARIO_STR = '''
 directives:
     - add_model:
+        name: floor
+        file: file:///workspaces/code/src/assets/room/floor.sdf
+    - add_weld:
+        parent: world
+        child: floor::link
+    - add_model:
         name: iiwa1
-        file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [{J1}]
             iiwa_joint_2: [{J2}]
@@ -38,6 +44,22 @@ directives:
         X_PC:
             translation: [0, 0, 0.09]
             rotation: !Rpy {{ deg: [90, 0, 90] }}
+    - add_model:
+        name: table
+        file: file:///workspaces/code/src/assets/furniture/table1/model.sdf
+    - add_weld:
+        parent: world
+        child: table::link
+        X_PC:
+            translation: [0.0, 0.0, 0.022721]
+    - add_model:
+        name: chessboard
+        file: file:///workspaces/code/src/assets/chess/chessboard/model.sdf
+    - add_weld:
+        parent: table::link
+        child: chessboard::link
+        X_PC:
+            translation: [0.0, 0.0, 0.4846]
 '''
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
@@ -84,13 +106,14 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
             # Construct the pre-pick pose
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_xyz = X_WG_pick.translation()
-            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
+            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.0]) # offset to gripper origin is 0.1, max piece height is 0.075
 
             # Run IK
             try:
                 result = inverse_kinematics(plant, plant_context, X_WG_prepick, q_nominal=q_nominal)
+                # result = inverse_kinematics_axis(plant, plant_context, X_WG_prepick, [0,1,0], [0,0,-1], q_nominal=q_nominal)
                 score += 1
-            except:
+            except Exception as e:
                 continue
 
     # Normalize score
@@ -147,7 +170,7 @@ if __name__ == '__main__':
     
     # Run bayesian optimization to find best starting configuration
     start = time.time()
-    result = bayesian_optimization(init_points=30, n_iter=100)
+    result = bayesian_optimization()
     end = time.time()
 
     # Print results
