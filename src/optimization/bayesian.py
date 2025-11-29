@@ -33,7 +33,7 @@ directives:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, {BASE_DIST}, 0.01]
+            translation: [0, {BASE_DIST}, {BASE_HEIGHT}]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg1
@@ -62,10 +62,10 @@ directives:
             translation: [0.0, 0.0, 0.478391]
 '''
 
-def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
+def setup_station(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
     # Create scenario
     scenario_string = BASE_SCENARIO_STR.format(
-        BASE_DIST=base_dist,
+        BASE_DIST=base_dist, BASE_HEIGHT=base_height,
         J1=j1, J2=j2, J3=j3, J4=j4, J5=j5, J6=j6, J7=j7
     )
 
@@ -80,9 +80,9 @@ def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
 
     return diagram, station
 
-def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
+def black_box_function(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
     # Get the plant and context
-    diagram, station = setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7)
+    diagram, station = setup_station(base_dist, base_height+0.01, j1, j2, j3, j4, j5, j6, j7)
     context = diagram.CreateDefaultContext()
     plant = station.plant()
     plant_context = diagram.GetSubsystemContext(plant, context)
@@ -106,7 +106,7 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
             # Construct the pre-pick pose
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_xyz = X_WG_pick.translation()
-            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
+            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 2*0.076]) # offset to gripper origin is 0.1, max piece height is 0.076
 
             # Run IK
             try:
@@ -124,7 +124,8 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
 def bayesian_optimization(init_points=15, n_iter=50):
     # Bounded region of parameter space
     pbounds = {
-        'base_dist': (-1.0, -0.5),
+        'base_dist': (-1.0, -0.55),
+        'base_height': (0.0, 0.076),
         'j1': (-2.96706, 2.96706),
         'j2': (-2.0944, 2.0944),
         'j3': (-2.96706, 2.96706),
