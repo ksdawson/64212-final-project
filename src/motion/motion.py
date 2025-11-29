@@ -22,19 +22,18 @@ class TrajectoryController(LeafSystem):
     def SetTrajectory(self, traj):
         self._traj = traj
 
-    def NextTrajectory(self, goal=None, poses=None, orientation_config=None, traj_t=5.0):
-        # If no goal/poses then hold at pose
-        if goal is None and poses is None:
+    def NextTrajectory(self, poses=None, times=None, orientation_config=None, traj_t=5.0):
+        # If no poses then hold at pose
+        if poses is None:
             self.SetTrajectory(None)
 
         # Get iiwa joint positions interpolated along the trajectory
-        if goal:
-            q_traj = kinematic_traj_op(self._plant, self._plant_context, goal, traj_t)
-        elif poses:
+        if poses:
             assert len(poses) >= 2, 'Need at least 2 poses'
-            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, orientation_config, traj_t)
+            # q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, orientation_config, traj_t)
+            q_traj = kinematic_traj_op(self._plant, self._plant_context, poses, times, traj_t)
         else:
-            raise Exception('Neigher goal or poses specified')
+            raise Exception('Poses unspecified')
 
         # Command the traj to the controller
         self.SetTrajectory(q_traj)

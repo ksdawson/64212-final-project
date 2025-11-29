@@ -48,13 +48,13 @@ class Controller:
 
         return formatted_piece_poses
     
-    def move(self, iiwa_instance, poses=None, traj=None, traj_t=5.0):
+    def move(self, iiwa_instance, poses=None, times=None, traj=None, traj_t=5.0):
         # Get which iiwa to move
         iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
 
         # Advance trajectory
         if poses is not None:
-            iiwa_traj_controller.NextTrajectory(poses=poses, traj_t=traj_t)
+            iiwa_traj_controller.NextTrajectory(poses=poses, times=times, traj_t=traj_t)
         elif traj is not None:
             iiwa_traj_controller.SetTrajectory(traj)
         else:
@@ -94,7 +94,7 @@ class Controller:
         # Get intermediate poses
         rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
         pick_xyz = X_WG_pick.translation()
-        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
+        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
         place_xyz = X_WG_place.translation()
         X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.175])
 
@@ -107,7 +107,7 @@ class Controller:
         # Go home if not at home
         if not poses_equal(X_WG_start, iiwa_X_WG_home):
             print('Moving home')
-            self.move(iiwa_instance, poses=[X_WG_start, iiwa_X_WG_home])
+            self.move(iiwa_instance, poses=[X_WG_start, iiwa_X_WG_home], times=[0.0, 1.0])
         print('Home')
 
         # Open gripper
@@ -115,7 +115,7 @@ class Controller:
         print('Gripper opened')
 
         # Go to pre-pick -> pick
-        self.move(iiwa_instance, poses=[X_WG_start, X_WG_prepick, X_WG_pick])
+        self.move(iiwa_instance, poses=[X_WG_start, X_WG_prepick, X_WG_pick], times=[0.0, 14/15, 1.0])
         print('Pre-pick to pick')
 
         # Close gripper
@@ -128,7 +128,7 @@ class Controller:
         print('Pre-pick to home')
 
         # Go to pre-place -> place
-        self.move(iiwa_instance, poses=[X_WG_start, X_WG_preplace, X_WG_place])
+        self.move(iiwa_instance, poses=[X_WG_start, X_WG_preplace, X_WG_place], times=[0.0, 14/15, 1.0])
         print('Pre-place to place')
 
         # Open gripper
