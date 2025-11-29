@@ -115,7 +115,7 @@ class Controller:
         print('Gripper opened')
 
         # Go to pre-pick -> pick
-        self.move(iiwa_instance, poses=[X_WG_start, X_WG_prepick, X_WG_pick], times=[0.0, 14/15, 1.0])
+        self.move(iiwa_instance, poses=[X_WG_prepick, X_WG_pick])
         print('Pre-pick to pick')
 
         # Close gripper
@@ -123,12 +123,11 @@ class Controller:
         print('Gripper closed')
 
         # Go to pre-pick -> home
-        # self.move(iiwa_instance, poses=[X_WG_pick, X_WG_prepick, X_WG_start])
         self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
         print('Pre-pick to home')
 
         # Go to pre-place -> place
-        self.move(iiwa_instance, poses=[X_WG_start, X_WG_preplace, X_WG_place], times=[0.0, 14/15, 1.0])
+        self.move(iiwa_instance, poses=[X_WG_preplace, X_WG_place])
         print('Pre-place to place')
 
         # Open gripper

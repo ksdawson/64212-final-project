@@ -30,8 +30,8 @@ class TrajectoryController(LeafSystem):
         # Get iiwa joint positions interpolated along the trajectory
         if poses:
             assert len(poses) >= 2, 'Need at least 2 poses'
-            # q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, orientation_config, traj_t)
-            q_traj = kinematic_traj_op(self._plant, self._plant_context, poses, times, traj_t)
+            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, orientation_config, traj_t)
+            # q_traj = kinematic_traj_op(self._plant, self._plant_context, poses, times, traj_t)
         else:
             raise Exception('Poses unspecified')
 

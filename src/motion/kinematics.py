@@ -167,25 +167,25 @@ def kinematic_traj_op(plant, plant_context, poses, times, traj_t, pos_tol=0.001,
             [0, 0, 0], # gripper origin
             plant_context
         )
-        # orient_const = OrientationConstraint(
-        #     plant,
-        #     world_frame,
-        #     RotationMatrix(),
-        #     gripper_frame,
-        #     pose.rotation(),
-        #     rot_tol*np.pi,
-        #     plant_context
-        # )
-        orient_const = AngleBetweenVectorsConstraint(
+        orient_const = OrientationConstraint(
             plant,
-            gripper_frame,
-            [0, 1, 0],
             world_frame,
-            [0, 0, -1],
-            0.0,
+            RotationMatrix(),
+            gripper_frame,
+            pose.rotation(),
             rot_tol*np.pi,
             plant_context
         )
+        # orient_const = AngleBetweenVectorsConstraint(
+        #     plant,
+        #     gripper_frame,
+        #     [0, 1, 0],
+        #     world_frame,
+        #     [0, 0, -1],
+        #     0.0,
+        #     rot_tol*np.pi,
+        #     plant_context
+        # )
 
         # Add constraints as path position constraints
         trajopt.AddPathPositionConstraint(pos_const, s=s)
