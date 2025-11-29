@@ -28,7 +28,7 @@ directives:
         child: iiwa1::iiwa_link_0
         X_PC:
             translation: [0, {BASE_DIST}, 0.01]
-            rotation: !Rpy {{ deg: [0, 0, 180] }}
+            rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg1
         file: package://manipulation/hydro/schunk_wsg_50_with_tip.sdf
