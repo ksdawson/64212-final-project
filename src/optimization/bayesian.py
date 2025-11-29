@@ -51,7 +51,7 @@ directives:
         parent: world
         child: table::link
         X_PC:
-            translation: [0.0, 0.0, 0.022721]
+            translation: [0.0, 0.0, -0.087279]
     - add_model:
         name: chessboard
         file: file:///workspaces/code/src/assets/chess/chessboard/model.sdf
@@ -59,7 +59,7 @@ directives:
         parent: table::link
         child: chessboard::link
         X_PC:
-            translation: [0.0, 0.0, 0.4846]
+            translation: [0.0, 0.0, 0.478391]
 '''
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
@@ -106,7 +106,7 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
             # Construct the pre-pick pose
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_xyz = X_WG_pick.translation()
-            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.0]) # offset to gripper origin is 0.1, max piece height is 0.075
+            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
 
             # Run IK
             try:
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     
     # Run bayesian optimization to find best starting configuration
     start = time.time()
-    result = bayesian_optimization()
+    result = bayesian_optimization(init_points=3, n_iter=10)
     end = time.time()
 
     # Print results

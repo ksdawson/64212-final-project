@@ -21,7 +21,7 @@ class Game:
 
         # Game in the simulation
         self.sq_size = 0.047
-        self.board_xyz = (0, 0, 0.527262)
+        self.board_xyz = (0, 0, 0.390591)
         self.board_size = self.sq_size * 8
         self.piece_size = 0.028626
 

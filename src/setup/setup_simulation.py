@@ -1,6 +1,12 @@
 import os
 
 # Base string containing the IIWAs, table, and chessboard
+# Table math: set at 0.01 -> 0.01 (floor height) - -0.012721 (chess obj base) = 0.022721
+#             set at -0.1 -> -0.1 - -0.012721 = -0.087279
+# Chessboard math:
+# set at 0.474623 (table height) + 0.01 (table base) = 0.484623
+# 0.484623 - -0.015968 (chessboard obj base) = 0.500591
+# move down 0.1 -> 0.500591 - 0.11 = 0.390591 (actually 0.478391 idk why)
 base_scenario_string = '''
 directives:
     - add_model:
@@ -104,7 +110,7 @@ directives:
         parent: world
         child: table::link
         X_PC:
-            translation: [0.0, 0.0, 0.022721]
+            translation: [0.0, 0.0, -0.087279]
     - add_model:
         name: chessboard
         file: file://{CHESSBOARD_PATH}
@@ -112,7 +118,7 @@ directives:
         parent: table::link
         child: chessboard::link
         X_PC:
-            translation: [0.0, 0.0, 0.4846]
+            translation: [0.0, 0.0, 0.478391]
     {PIECES}
 cameras:
     camera0:
@@ -145,12 +151,13 @@ visualization:
     publish_proximity: true
 '''
 # String format for chess pieces
+# Piece height: 0.527262 - 0.1 = 0.427262
 piece_scenario_str = '''- add_model:
         name: {NAME}
         file: file://{PATH}
         default_free_body_pose:
             link:
-                translation: [{X}, {Y}, 0.527262]
+                translation: [{X}, {Y}, 0.427262]
                 rotation: !Rpy {{ deg: [90, 0, 0] }}'''
 
 def get_pieces_poses():
@@ -226,7 +233,6 @@ def create_scenario():
 
     # Get chessboard
     chessboard_path = f'{current_directory}/{chess_assets_directory}/chessboard/model.sdf'
-    print(floor_path, table_path, chessboard_path)
 
     # Get pieces
     piece_poses = get_pieces_poses()
