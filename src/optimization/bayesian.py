@@ -101,10 +101,10 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
             # Construct the pre-pick pose
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_xyz = X_WG_pick.translation()
-            # X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1] - base_dist, pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
+            X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1] - base_dist, pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
 
-            X_offset = RigidTransform([0, -base_dist, 0])
-            X_WG_prepick = X_offset @ RigidTransform(rpy_down, pick_xyz + np.array([0, 0, 0.175])) # offset to gripper origin is 0.1, max piece height is 0.075
+            # X_offset = RigidTransform([0, -base_dist, 0])
+            # X_WG_prepick = X_offset @ RigidTransform(rpy_down, pick_xyz + np.array([0, 0, 0.175])) # offset to gripper origin is 0.1, max piece height is 0.075
 
             # Run IK
             try:
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     end = time.time()
 
     # Print results
-    duration = round(end - start, 3)
+    duration = round(end - start, 50)
     print(f'Bayesian optimization finished in {duration} s')
     score = round(result['target'] * 64)
     print(f'Score: {score}')
