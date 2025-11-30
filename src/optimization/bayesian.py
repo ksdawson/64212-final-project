@@ -9,7 +9,6 @@ from manipulation.station import LoadScenario, MakeHardwareStation
 from motion.kinematics import inverse_kinematics, inverse_kinematics_axis
 from game.utils import Game
 
-# Global vars
 BASE_SCENARIO_STR = '''
 directives:
     - add_model:
@@ -19,7 +18,7 @@ directives:
         parent: world
         child: floor::link
     - add_model:
-        name: iiwa1
+        name: iiwa
         file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
             iiwa_joint_1: [{J1}]
@@ -31,16 +30,16 @@ directives:
             iiwa_joint_7: [{J7}]
     - add_weld:
         parent: world
-        child: iiwa1::iiwa_link_0
+        child: iiwa::iiwa_link_0
         X_PC:
-            translation: [0, {BASE_DIST}, {BASE_HEIGHT}]
+            translation: [0, {BASE_DIST}, 0.23]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
-        name: wsg1
+        name: wsg
         file: package://manipulation/hydro/schunk_wsg_50_with_tip.sdf
     - add_weld:
-        parent: iiwa1::iiwa_link_7
-        child: wsg1::body
+        parent: iiwa::iiwa_link_7
+        child: wsg::body
         X_PC:
             translation: [0, 0, 0.09]
             rotation: !Rpy {{ deg: [90, 0, 90] }}
@@ -62,10 +61,10 @@ directives:
             translation: [0.0, 0.0, 0.478391]
 '''
 
-def setup_station(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
+def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
     # Create scenario
     scenario_string = BASE_SCENARIO_STR.format(
-        BASE_DIST=base_dist, BASE_HEIGHT=base_height,
+        BASE_DIST=base_dist,
         J1=j1, J2=j2, J3=j3, J4=j4, J5=j5, J6=j6, J7=j7
     )
 
@@ -80,9 +79,9 @@ def setup_station(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
 
     return diagram, station
 
-def black_box_function(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
+def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
     # Get the plant and context
-    diagram, station = setup_station(base_dist, base_height+0.01, j1, j2, j3, j4, j5, j6, j7)
+    diagram, station = setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7)
     context = diagram.CreateDefaultContext()
     plant = station.plant()
     plant_context = diagram.GetSubsystemContext(plant, context)
@@ -121,20 +120,7 @@ def black_box_function(base_dist, base_height, j1, j2, j3, j4, j5, j6, j7):
 
     return score
 
-def bayesian_optimization(init_points=15, n_iter=50):
-    # Bounded region of parameter space
-    pbounds = {
-        'base_dist': (-1.0, -0.55),
-        'base_height': (0.0, 0.076),
-        'j1': (-2.96706, 2.96706),
-        'j2': (-2.0944, 2.0944),
-        'j3': (-2.96706, 2.96706),
-        'j4': (-2.0944, 2.0944),
-        'j5': (-2.96706, 2.96706),
-        'j6': (-2.0944, 2.0944),
-        'j7': (-3.05433, 3.05433)
-    }
-
+def bayesian_optimization(pbounds, init_points=15, n_iter=50):
     # Create optimizer
     optimizer = BayesianOptimization(
         f=black_box_function,
@@ -161,6 +147,34 @@ def bayesian_optimization(init_points=15, n_iter=50):
     result = optimizer.max
     return result
 
+def main():
+    # Bounded region of parameter space
+    pbounds = {
+        'base_dist': (-1.0, -0.55), # set
+        'j1': (-2.96706, 2.96706),
+        'j2': (-2.0944, 2.0944),
+        'j3': (-2.96706, 2.96706),
+        'j4': (-2.0944, 2.0944),
+        'j5': (-2.96706, 2.96706),
+        'j6': (-2.0944, 2.0944),
+        'j7': (-3.05433, 3.05433)
+    }
+
+    # Run bayesian optimization to find best starting configuration for each iiwa
+    for base_dist in [(0.55, 1.0), (-1.0, -0.55)]:
+        pbounds['base_dist'] = base_dist
+        start = time.time()
+        result = bayesian_optimization(pbounds)
+        end = time.time()
+
+        # Print results
+        duration = round(end - start, 3)
+        print(f'Bayesian optimization finished in {duration} s')
+        score = round(result['target'] * 64)
+        print(f'Score: {score}')
+        params = {k:round(float(v),4) for k,v in result['params'].items()}
+        print('Params: ', params)
+
 if __name__ == '__main__':
     # Get the bounds of the iiwa
     # diagram, station = setup_station(0, 0, 0, 0, 0, 0, 0, 0)
@@ -168,16 +182,5 @@ if __name__ == '__main__':
     # lower = plant.GetPositionLowerLimits()
     # upper = plant.GetPositionUpperLimits()
     # print(lower, upper)
-    
-    # Run bayesian optimization to find best starting configuration
-    start = time.time()
-    result = bayesian_optimization(init_points=3, n_iter=10)
-    end = time.time()
 
-    # Print results
-    duration = round(end - start, 3)
-    print(f'Bayesian optimization finished in {duration} s')
-    score = round(result['target'] * 64)
-    print(f'Score: {score}')
-    params = {k:round(float(v),4) for k,v in result['params'].items()}
-    print('Params: ', params)
+    main()
