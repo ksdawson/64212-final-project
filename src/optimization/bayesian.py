@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import pickle
 from bayes_opt import BayesianOptimization
 from bayes_opt.util import UtilityFunction
 from pydrake.all import (
@@ -109,8 +110,8 @@ def black_box_function(base_dist, j1, j2, j3, j4, j5, j6, j7):
 
             # Run IK
             try:
-                result = inverse_kinematics(plant, plant_context, X_WG_prepick, q_nominal=q_nominal)
-                # result = inverse_kinematics_axis(plant, plant_context, X_WG_prepick, [0,1,0], [0,0,-1], q_nominal=q_nominal)
+                result = inverse_kinematics('', plant, plant_context, X_WG_prepick, q_nominal=q_nominal)
+                # result = inverse_kinematics_axis('', plant, plant_context, X_WG_prepick, [0,1,0], [0,0,-1], q_nominal=q_nominal)
                 score += 1
             except Exception as e:
                 continue
@@ -161,7 +162,9 @@ def main():
     }
 
     # Run bayesian optimization to find best starting configuration for each iiwa
-    for base_dist in [(0.55, 1.0), (-1.0, -0.55)]:
+    results = {}
+    for i, base_dist in enumerate([(0.55, 1.0), (-1.0, -0.55)]):
+        iiwa_instance = i + 1
         pbounds['base_dist'] = base_dist
         start = time.time()
         result = bayesian_optimization(pbounds)
@@ -174,6 +177,12 @@ def main():
         print(f'Score: {score}')
         params = {k:round(float(v),4) for k,v in result['params'].items()}
         print('Params: ', params)
+        results[iiwa_instance] = params
+
+    # Store results
+    file_path = 'starting_configuration.pkl'
+    with open(file_path, 'wb') as f:
+        pickle.dump(results, f)
 
 if __name__ == '__main__':
     # Get the bounds of the iiwa

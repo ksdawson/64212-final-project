@@ -6,6 +6,7 @@ from perception.point_cloud import get_oriented_piece_model_pcs
 from motion.kinematics import reverse_traj
 from game.utils import Game
 from utils import poses_equal
+from control.utils import get_trajs_from_db
 
 class Controller:
     def __init__(self, diagram, context, simulator,
@@ -30,6 +31,7 @@ class Controller:
 
         # Create game
         self.game = Game()
+        self.traj_db = get_trajs_from_db()
 
     def get_piece_poses(self):
         # Run perception pipeline
@@ -80,6 +82,9 @@ class Controller:
 
     def close_gripper(self, iiwa_instance):
         self.grip(iiwa_instance, 0.0) # max force
+
+    def NEW_chess_move(self, iiwa_instance, move):
+        pass
     
     def chess_move(self, iiwa_instance, move):
         # Get which iiwa to move

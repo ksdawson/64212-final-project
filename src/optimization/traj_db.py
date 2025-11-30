@@ -1,7 +1,6 @@
 import numpy as np
 import pickle
 import time
-import yaml
 from pydrake.all import (
     DiagramBuilder, RollPitchYaw, RotationMatrix, RigidTransform
 )
