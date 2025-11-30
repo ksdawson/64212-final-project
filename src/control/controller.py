@@ -84,7 +84,27 @@ class Controller:
         self.grip(iiwa_instance, 0.0) # max force
 
     def NEW_chess_move(self, iiwa_instance, move):
-        pass
+        # Get trajectories
+        pick_sq = chess.square_name(move.from_square)
+        place_sq = chess.square_name(move.to_square)
+        pick_traj = self.traj_db[iiwa_instance][pick_sq]
+        place_traj = self.traj_db[iiwa_instance][place_sq]
+
+        # Open gripper
+        self.open_gripper(iiwa_instance)
+        print('Gripper opened')
+
+        # Go to pre-pick -> pick
+        self.move(iiwa_instance, traj=pick_traj['to'])
+        print('Pre-pick to pick')
+
+        # Close gripper
+        self.close_gripper(iiwa_instance)
+        print('Gripper closed')
+
+        # Go to post-pick -> home
+        self.move(iiwa_instance, traj=pick_traj['from'])
+        print('Post-pick to home')
     
     def chess_move(self, iiwa_instance, move):
         # Get which iiwa to move
@@ -155,7 +175,8 @@ class Controller:
         iiwa_instance = self.game.get_turn()
         
         # Make move
-        self.chess_move(iiwa_instance, move)
+        # self.chess_move(iiwa_instance, move)
+        self.NEW_chess_move(iiwa_instance, move)
         
         # # Run perception pipeline
         # piece_poses = self.get_piece_poses()

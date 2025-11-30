@@ -79,7 +79,9 @@ def inverse_kinematics(iiwa_instance, plant, plant_context, pose, q_nominal=None
     # Solve the IK OP
     result = Solve(prog)
     assert result.is_success(), 'KTO solve failed'
-    return result.GetSolution(q_variables)
+    sol = result.GetSolution(q_variables)
+
+    return sol
 
 def inverse_kinematics_axis(iiwa_instance, plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
     # Get frames
@@ -143,8 +145,13 @@ def kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, pose_lst, or
     # Construct the traj
     q_knots = np.array(q_knots)
 
-    # Exclude gripper joints
-    q_knots_iiwa = q_knots[:, 0:7]
+    # Exclude gripper joints and other iiwa
+    if q_knots.shape[1] > 9:
+        # two iiwas
+        q_knots_iiwa = q_knots[:, 0:7] if iiwa_instance == 1 else q_knots[:, 9:16]
+    else:
+        # one iiwa
+        q_knots_iiwa = q_knots[:, 0:7]
     if knots_only:
         return q_knots_iiwa
 

@@ -143,7 +143,7 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                     knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick, X_WG_pick], knots_only=True)
                     moves_db[iiwa_instance][sq] = knots
                 except Exception as e:
-                    print('KTO failed')
+                    print('KTO failed: ', e)
 
     # Pickle the database
     file_path = 'traj_db.pkl'
@@ -152,9 +152,16 @@ def create_traj_db(iiwa1_config, iiwa2_config):
 
 def main():
     # Configs from Bayesian Optimization
-    iiwa1_config = {'base_dist': -0.55, 'j1': -1.7237, 'j2': -0.1377, 'j3': 2.0056, 'j4': -1.8408, 'j5': -2.8261, 'j6': -0.7136, 'j7': -1.7702}
-    iiwa2_config = {'base_dist': 0.5808, 'j1': -1.5772, 'j2': 0.8144, 'j3': -0.7459, 'j4': -1.7612, 'j5': 1.4501, 'j6': 1.6473, 'j7': 1.6579}
+    # iiwa2_config = {'base_dist': -0.55, 'j1': -1.7237, 'j2': -0.1377, 'j3': 2.0056, 'j4': -1.8408, 'j5': -2.8261, 'j6': -0.7136, 'j7': -1.7702}
+    # iiwa1_config = {'base_dist': 0.5808, 'j1': -1.5772, 'j2': 0.8144, 'j3': -0.7459, 'j4': -1.7612, 'j5': 1.4501, 'j6': 1.6473, 'j7': 1.6579}
     
+    # Get iiwa starting configurations
+    file_path = 'starting_configuration.pkl'
+    with open(file_path, 'rb') as file:
+        # Load the data from the pickle file
+        data = pickle.load(file)
+    iiwa1_config, iiwa2_config = data[1], data[2]
+
     # Create traj db
     start = time.time()
     create_traj_db(iiwa1_config, iiwa2_config)

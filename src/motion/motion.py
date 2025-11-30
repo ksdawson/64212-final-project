@@ -3,8 +3,9 @@ from pydrake.all import LeafSystem, BasicVector
 from motion.kinematics import kinematic_traj_op_per_pose, kinematic_traj_op
 
 class TrajectoryController(LeafSystem):
-    def __init__(self, plant):
+    def __init__(self, iiwa_instance, plant):
         super().__init__()
+        self._iiwa_instance = iiwa_instance
         self._traj = None
         self._plant = plant
         self._plant_context = plant.CreateDefaultContext()

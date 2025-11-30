@@ -45,8 +45,8 @@ def setup(meshcat=None):
     )
 
     # Add controllers
-    iiwa1_traj_controller = builder.AddNamedSystem('iiwa1_traj_controller', TrajectoryController(plant_iiwa1))
-    iiwa2_traj_controller = builder.AddNamedSystem('iiwa2_traj_controller', TrajectoryController(plant_iiwa2))
+    iiwa1_traj_controller = builder.AddNamedSystem('iiwa1_traj_controller', TrajectoryController(1, plant_iiwa1))
+    iiwa2_traj_controller = builder.AddNamedSystem('iiwa2_traj_controller', TrajectoryController(2, plant_iiwa2))
     iiwa1_grasp_controller = builder.AddNamedSystem('iiwa1_grasp_controller', GraspController(plant_iiwa1))
     iiwa2_grasp_controller = builder.AddNamedSystem('iiwa2_grasp_controller', GraspController(plant_iiwa2))
 

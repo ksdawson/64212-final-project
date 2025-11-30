@@ -1,9 +1,8 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from pydrake.all import (
-    Rgba, RigidTransform, Box, PointCloud, Sphere, JacobianWrtVariable
+    Rgba, RigidTransform, Box, PointCloud, Sphere
 )
-from motion.kinematics import inverse_kinematics, inverse_kinematics_axis
 
 ######################################################################
 # Visualization functions
@@ -105,3 +104,20 @@ def poses_equal(pose1, pose2, pos_tol=1e-3, rot_tol=1e-3):
         return False
 
     return True
+
+def compute_ee_positions_along_trajectory(iiwa_instance, plant, context, traj, times):
+    positions = []
+    for i in range(len(times)):
+        iiwa_q = traj.value(times[i]).reshape(-1)
+
+        # Set joint positions into the context
+        plant_q = np.hstack((iiwa_q, np.zeros(plant.num_positions() - len(iiwa_q))))
+        plant.SetPositions(context, plant_q)
+
+        # Compute forward kinematics
+        X_WE = plant.EvalBodyPoseInWorld(context, plant.GetBodyByName('body', plant.GetModelInstanceByName(f'wsg{iiwa_instance}')))
+
+        # Extract translation
+        p_WE = X_WE.translation()
+        positions.append(p_WE.copy())
+    return positions

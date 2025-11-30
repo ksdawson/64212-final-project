@@ -1,4 +1,5 @@
 import os
+import pickle
 
 # Base string containing the IIWAs, table, and chessboard
 # Table math: set at 0.01 -> 0.01 (floor height) - -0.012721 (chess obj base) = 0.022721
@@ -55,18 +56,18 @@ directives:
         name: iiwa1
         file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
-            iiwa_joint_1: [-1.7237]
-            iiwa_joint_2: [-0.1377]
-            iiwa_joint_3: [2.0056]
-            iiwa_joint_4: [-1.8408]
-            iiwa_joint_5: [-2.8261]
-            iiwa_joint_6: [-0.7136]
-            iiwa_joint_7: [-1.7702]
+            iiwa_joint_1: [{IIWA1_J1}]
+            iiwa_joint_2: [{IIWA1_J2}]
+            iiwa_joint_3: [{IIWA1_J3}]
+            iiwa_joint_4: [{IIWA1_J4}]
+            iiwa_joint_5: [{IIWA1_J5}]
+            iiwa_joint_6: [{IIWA1_J6}]
+            iiwa_joint_7: [{IIWA1_J7}]
     - add_weld:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, -0.55, 0.23]
+            translation: [0, {IIWA1_BASE_DIST}, 0.23]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg1
@@ -81,18 +82,18 @@ directives:
         name: iiwa2
         file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
-            iiwa_joint_1: [-1.5772]
-            iiwa_joint_2: [0.8144]
-            iiwa_joint_3: [-0.7459]
-            iiwa_joint_4: [-1.7612]
-            iiwa_joint_5: [1.4501]
-            iiwa_joint_6: [1.6473]
-            iiwa_joint_7: [1.6579]
+            iiwa_joint_1: [{IIWA2_J1}]
+            iiwa_joint_2: [{IIWA2_J2}]
+            iiwa_joint_3: [{IIWA2_J3}]
+            iiwa_joint_4: [{IIWA2_J4}]
+            iiwa_joint_5: [{IIWA2_J5}]
+            iiwa_joint_6: [{IIWA2_J6}]
+            iiwa_joint_7: [{IIWA2_J7}]
     - add_weld:
         parent: world
         child: iiwa2::iiwa_link_0
         X_PC:
-            translation: [0, 0.5808, 0.23]
+            translation: [0, {IIWA2_BASE_DIST}, 0.23]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg2
@@ -247,12 +248,22 @@ def create_scenario():
                 model_str = piece_scenario_str.format(NAME=name_copy, PATH=piece_path, X=x, Y=y)
                 piece_strs.append(model_str)
     
+    # Get iiwa starting configurations
+    file_path = 'starting_configuration.pkl'
+    with open(file_path, 'rb') as file:
+        # Load the data from the pickle file
+        data = pickle.load(file)
+    iiwa1_config, iiwa2_config = data[1], data[2]
+
     # Create scenario
     scenario_string = base_scenario_string.format(
         FLOOR_PATH=floor_path,
         TABLE_PATH=table_path,
         CHESSBOARD_PATH=chessboard_path,
         PIECES='\n    '.join(piece_strs),
+        IIWA1_BASE_DIST=iiwa1_config['base_dist'], IIWA2_BASE_DIST=iiwa2_config['base_dist'],
+        IIWA1_J1=iiwa1_config['j1'], IIWA1_J2=iiwa1_config['j2'], IIWA1_J3=iiwa1_config['j3'], IIWA1_J4=iiwa1_config['j4'], IIWA1_J5=iiwa1_config['j5'], IIWA1_J6=iiwa1_config['j6'], IIWA1_J7=iiwa1_config['j7'],
+        IIWA2_J1=iiwa2_config['j1'], IIWA2_J2=iiwa2_config['j2'], IIWA2_J3=iiwa2_config['j3'], IIWA2_J4=iiwa2_config['j4'], IIWA2_J5=iiwa2_config['j5'], IIWA2_J6=iiwa2_config['j6'], IIWA2_J7=iiwa2_config['j7']
     )
 
     # Output to file

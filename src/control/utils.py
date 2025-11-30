@@ -1,5 +1,5 @@
 import pickle
-from motion.kinematics import trajectory
+from motion.kinematics import trajectory, reverse_traj
 
 def get_trajs_from_db():
     # Get the traj db
@@ -14,6 +14,7 @@ def get_trajs_from_db():
         trajs[iiwa_instance] = {}
         for move, knots in data[iiwa_instance].items():
             traj = trajectory(knots)
-            trajs[iiwa_instance][move] = traj
+            opp_traj = reverse_traj(traj)
+            trajs[iiwa_instance][move] = {'to': traj, 'from': opp_traj}
 
     return trajs
