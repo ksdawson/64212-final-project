@@ -94,9 +94,10 @@ class Controller:
         # Get intermediate poses
         rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
         pick_xyz = X_WG_pick.translation()
-        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.175]) # offset to gripper origin is 0.1, max piece height is 0.075
+        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 0.076]) # offset to gripper origin is 0.1, max piece height is 0.076
+        X_WG_postpick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 2*0.076])
         place_xyz = X_WG_place.translation()
-        X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.175])
+        X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.1 + 0.076])
 
         # Adjust end poses
         X_WG_pick.set_rotation(rpy_down)
@@ -123,8 +124,9 @@ class Controller:
         print('Gripper closed')
 
         # Go to pre-pick -> home
-        self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
-        print('Pre-pick to home')
+        # self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
+        self.move(iiwa_instance, poses=[X_WG_postpick, X_WG_start])
+        print('Post-pick to home')
 
         # Go to pre-place -> place
         self.move(iiwa_instance, poses=[X_WG_preplace, X_WG_place])

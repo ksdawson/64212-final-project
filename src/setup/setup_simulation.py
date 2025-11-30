@@ -55,19 +55,19 @@ directives:
         name: iiwa1
         file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
-            iiwa_joint_1: [-1.57]
-            iiwa_joint_2: [-0.2]
-            iiwa_joint_3: [0]
-            iiwa_joint_4: [-1.5]
-            iiwa_joint_5: [0]
-            iiwa_joint_6: [1.6]
-            iiwa_joint_7: [0]
+            iiwa_joint_1: [-1.7237]
+            iiwa_joint_2: [-0.1377]
+            iiwa_joint_3: [2.0056]
+            iiwa_joint_4: [-1.8408]
+            iiwa_joint_5: [-2.8261]
+            iiwa_joint_6: [-0.7136]
+            iiwa_joint_7: [-1.7702]
     - add_weld:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, -0.6, 0.01]
-            rotation: !Rpy {{ deg: [0, 0, 180] }}
+            translation: [0, -0.55, 0.23]
+            rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg1
         file: package://manipulation/hydro/schunk_wsg_50_with_tip.sdf
@@ -81,18 +81,18 @@ directives:
         name: iiwa2
         file: package://drake_models/iiwa_description/sdf/iiwa7_with_box_collision.sdf
         default_joint_positions:
-            iiwa_joint_1: [-1.57]
-            iiwa_joint_2: [-0.2]
-            iiwa_joint_3: [0]
-            iiwa_joint_4: [-1.5]
-            iiwa_joint_5: [0]
-            iiwa_joint_6: [1.6]
-            iiwa_joint_7: [0]
+            iiwa_joint_1: [-1.5772]
+            iiwa_joint_2: [0.8144]
+            iiwa_joint_3: [-0.7459]
+            iiwa_joint_4: [-1.7612]
+            iiwa_joint_5: [1.4501]
+            iiwa_joint_6: [1.6473]
+            iiwa_joint_7: [1.6579]
     - add_weld:
         parent: world
         child: iiwa2::iiwa_link_0
         X_PC:
-            translation: [0, 0.6, 0.01]
+            translation: [0, 0.5808, 0.23]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg2

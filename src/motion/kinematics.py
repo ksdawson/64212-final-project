@@ -43,10 +43,11 @@ def trajectory(q_knots, t = 5):
 
     return q_traj
 
-def inverse_kinematics(plant, plant_context, pose, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
+def inverse_kinematics(iiwa_instance, plant, plant_context, pose, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
     # Get frames
     world_frame = plant.world_frame()
-    gripper_frame = plant.GetFrameByName('body')
+    gripper_model = plant.GetModelInstanceByName(f'wsg{iiwa_instance}')
+    gripper_frame = plant.GetFrameByName('body', gripper_model)
 
     # Setup IK
     ik = InverseKinematics(plant, plant_context)
@@ -80,10 +81,11 @@ def inverse_kinematics(plant, plant_context, pose, q_nominal=None, pos_tol=0.001
     assert result.is_success(), 'KTO solve failed'
     return result.GetSolution(q_variables)
 
-def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
+def inverse_kinematics_axis(iiwa_instance, plant, plant_context, pose, gripper_axis, world_axis, q_nominal=None, pos_tol=0.001, rot_tol=0.01):
     # Get frames
     world_frame = plant.world_frame()
-    gripper_frame = plant.GetFrameByName('body')
+    gripper_model = plant.GetModelInstanceByName(f'wsg{iiwa_instance}')
+    gripper_frame = plant.GetFrameByName('body', gripper_model)
 
     # Setup IK
     ik = InverseKinematics(plant, plant_context)
@@ -118,7 +120,7 @@ def inverse_kinematics_axis(plant, plant_context, pose, gripper_axis, world_axis
     assert result.is_success(), 'KTO solve failed'
     return result.GetSolution(q_variables)
 
-def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, orientation_config, traj_t):
+def kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, pose_lst, orientation_config=None, traj_t=5.0, knots_only=False):
     # Nominal joint angles for joint-centering
     q_nominal = plant.GetPositions(plant_context)
 
@@ -128,9 +130,9 @@ def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, orientation_confi
     for pose in pose_lst:
         # Run IK
         if orientation_config is None or orientation_config['type'] == 'full':
-            result = inverse_kinematics(plant, plant_context, pose, q_nominal=q_nominal)
+            result = inverse_kinematics(iiwa_instance, plant, plant_context, pose, q_nominal=q_nominal)
         elif orientation_config['type'] == 'axis':
-            result = inverse_kinematics_axis(plant, plant_context, pose, orientation_config['gripper_axis'], orientation_config['world_axis'], q_nominal=q_nominal)
+            result = inverse_kinematics_axis(iiwa_instance, plant, plant_context, pose, orientation_config['gripper_axis'], orientation_config['world_axis'], q_nominal=q_nominal)
         else:
             raise Exception('Orientation type is full or axis alignment')
         q_knots.append(result)
@@ -143,6 +145,8 @@ def kinematic_traj_op_per_pose(plant, plant_context, pose_lst, orientation_confi
 
     # Exclude gripper joints
     q_knots_iiwa = q_knots[:, 0:7]
+    if knots_only:
+        return q_knots_iiwa
 
     # Build trajectory from joint positions
     q_traj = trajectory(q_knots_iiwa, t=traj_t)
