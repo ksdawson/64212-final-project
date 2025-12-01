@@ -93,29 +93,21 @@ class Controller:
         self.open_gripper(iiwa_instance)
         print('Gripper opened')
 
-        # home -> pre-pick -> pick
+        # home -> post-pick -> pre-pick -> pick
         self.move(iiwa_instance, traj=pick_traj['pick'])
-        print('Pre-pick to pick')
+        print('Home to pick')
 
         # close gripper
         self.close_gripper(iiwa_instance)
         print('Gripper closed')
 
-        # pick -> post-pick -> home
+        # pick -> pre-pick -> post-pick
         self.move(iiwa_instance, traj=pick_traj['post_pick'])
         print('Pick to post pick')
 
-        # # home -> pre-place -> place
-        # self.move(iiwa_instance, traj=place_traj['to'])
-        # print('Pre-place to place')
-
-        # # open gripper
-        # self.open_gripper(iiwa_instance)
-        # print('Gripper opened')
-
-        # # place -> post-place -> home
-        # self.move(iiwa_instance, traj=place_traj['from'])
-        # print('Post-place to home')
+        # post-pick -> home
+        self.move(iiwa_instance, traj=pick_traj['home'])
+        print('Post pick to home')
     
     def chess_move(self, iiwa_instance, move):
         # Get which iiwa to move
