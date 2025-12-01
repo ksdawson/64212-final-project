@@ -7,6 +7,10 @@ def get_trajs_from_db():
     with open(file_path, 'rb') as file:
         # Load the data from the pickle file
         data = pickle.load(file)
+
+    # Name conversion for piece dependent trajectories
+    piece_name_map = {'king': 'K', 'queen': 'Q', 'bishop': 'B', 'knight': 'N', 'rook': 'R', 'pawn': 'P'}
+    lst_name = lambda name, traj_type: name if traj_type == 'to_place' else piece_name_map[name]
     
     # Build the trajectories from the knots
     trajs = {}
@@ -15,9 +19,9 @@ def get_trajs_from_db():
         for move, knots in data[iiwa_instance].items():
             trajs[iiwa_instance][move] = {}
             for traj_type, traj_knots in knots.items():
-                if traj_type == 'to_place':
+                if traj_type in ('to_place', 'to_pick', 'from_pick'):
                     traj_t = 0.5
-                    traj = {sq: trajectory(sq_knots, t=traj_t) for sq, sq_knots in traj_knots.items()} if traj_knots is not None else None
+                    traj = {lst_name(lst, traj_type): trajectory(lst_knots, t=traj_t) for lst, lst_knots in traj_knots.items()} if traj_knots is not None else None
                 else:
                     if traj_type in ('to_post_pick', 'from_post_pick'):
                         # Speed doesn't matter since not holding a piece or near pieces but should be reasonable

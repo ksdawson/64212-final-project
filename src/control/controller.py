@@ -91,65 +91,73 @@ class Controller:
 
     def chess_move(self, iiwa_instance, move):
         # Get trajectories
+        piece = self.game.get_piece_at(move.from_square)
         pick_sq = chess.square_name(move.from_square)
         place_sq = chess.square_name(move.to_square)
         pick_traj = self.traj_db[iiwa_instance][pick_sq]
         place_traj = self.traj_db[iiwa_instance][place_sq]
 
-        # open gripper
+        # Open gripper
         self.open_gripper(iiwa_instance)
-        print('Gripper opened')
 
-        # home -> post-pick -> pre-pick -> pick
+        # Move home -> post-pick -> pre-pick -> pick
         self.move(iiwa_instance, traj=pick_traj['to_post_pick'], traj_t=1.0)
-        self.move(iiwa_instance, traj=pick_traj['to_pick'], traj_t=0.5)
-        print('Home to pick')
+        self.move(iiwa_instance, traj=pick_traj['to_pick'][piece.upper()], traj_t=0.5)
 
-        # wait to make pick more stable
-        self.advance(0.5)
+        # Wait to make pick more stable
+        self.advance(0.2)
 
-        # close gripper
+        # Close gripper
         self.close_gripper(iiwa_instance)
-        print('Gripper closed')
 
-        # pick -> pre-pick -> post-pick
-        self.move(iiwa_instance, traj=pick_traj['from_pick'], traj_t=0.5)
-        print('Pick to post pick')
+        # Move pick -> pre-pick -> post-pick
+        self.move(iiwa_instance, traj=pick_traj['from_pick'][piece.upper()], traj_t=0.5)
 
-        # post-pick -> post-place -> pre-place -> place
+        self.advance(0.2)
+
+        # Move post-pick -> post-place -> pre-place -> place
         self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=0.5)
-        self.move(iiwa_instance, traj=place_traj['to_pick'], traj_t=0.5)
-        print('Post pick to place')
 
-        # wait to make place more stable
-        self.advance(0.5)
+        self.advance(0.2)
 
-        # open gripper
+        self.move(iiwa_instance, traj=place_traj['to_pick'][piece.upper()], traj_t=0.5)
+
+        self.advance(0.2)
+
+        # Open gripper
         self.open_gripper(iiwa_instance)
-        print('Gripper opened')
 
-        # place -> pre-place -> post-place
-        self.move(iiwa_instance, traj=place_traj['from_pick'], traj_t=0.5)
+        # Move place -> pre-place -> post-place
+        self.move(iiwa_instance, traj=place_traj['from_pick'][piece.upper()], traj_t=0.5)
 
-        # close gripper
+        # Close gripper
         self.close_gripper(iiwa_instance)
-        print('Gripper closed')
 
-        # post-place -> home
+        # Move post-place -> home
         self.move(iiwa_instance, traj=place_traj['from_post_pick'], traj_t=1.0)
         
-    def control_loop(self, simulator):
+    def control_loop(self):
         # Called once every simulation step
-
-        # Get a move
-        move = self.game.get_move()
 
         # Get which iiwa to move
         iiwa_instance = self.game.get_turn()
         
-        # Make move
-        # self.chess_move(iiwa_instance, move)
+        # Get a move
+        # move = self.game.get_move()
+        move = self.game.get_non_capture_move()
+        if move is None:
+            # Game over
+            return True
+
+        # Make move in simulation
+        if self.game.is_capture_move(move):
+            # TODO: Remove piece first
+            # For now just end
+            return
         self.chess_move(iiwa_instance, move)
+
+        # Make move in game
+        self.game.make_move(move)
         
         # # Run perception pipeline
         # piece_poses = self.get_piece_poses()
@@ -157,11 +165,9 @@ class Controller:
         # # Check board state
         # self.game.check_game_state(piece_poses)
 
-        # # Get a move
-        # move = self.game.get_move()
-
-        # # Handle move
-        # if self.game.is_capture_move(move):
-        #     # TODO: Remove piece first
-        #     # For now just end
-        #     return
+        return False
+    
+    def run_game(self):
+        game_over = False
+        while not game_over:
+            game_over = self.control_loop()

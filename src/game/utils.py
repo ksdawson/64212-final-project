@@ -1,4 +1,5 @@
 import chess
+import random
 from pydrake.all import RigidTransform
 
 # Utils
@@ -34,14 +35,20 @@ class Game:
     def get_piece_at(self, square):
         piece = self.board.piece_at(square)
         return piece.symbol()
-
+    
     def get_move(self):
-        legal_moves = self.board.legal_moves
-        move = next(iter(legal_moves)) 
-        return move
+        # Returns a random legal move
+        moves = list(self.board.legal_moves)
+        return random.choice(moves) if moves else None
+        
+    def get_non_capture_move(self):
+        # Returns a random legal non-capture move
+        non_capture_moves = [move for move in self.board.legal_moves if not self.is_capture_move(move)]
+        return random.choice(non_capture_moves) if non_capture_moves else None
 
-    def make_move(self, move_str):
-        move = self.board.parse_san(move_str)
+    def make_move(self, move):
+        if isinstance(move, str):
+            move = self.board.parse_san(move)
         self.board.push(move)
 
     def pose_to_square(self, pose):

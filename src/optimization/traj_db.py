@@ -125,6 +125,14 @@ def create_traj_db(iiwa1_config, iiwa2_config):
 
     # Create a game
     game = Game()
+    piece_heights = {
+        'king': 0.07604153846153845,
+        'queen': 0.06604307692307691,
+        'bishop': 0.05498769230769231,
+        'knight': 0.05065692307692307,
+        'rook': 0.039976923076923083,
+        'pawn': 0.041956
+    }
 
     # Compute all 3 trajectories for each square for each iiwa
     moves_db = {}
@@ -140,9 +148,9 @@ def create_traj_db(iiwa1_config, iiwa2_config):
             # Construct the poses
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
             pick_base_xyz = X_WG_pick_base.translation()
-            X_WG_postpick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 2*0.076])
-            X_WG_prepick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076])
-            X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076/2]) # TODO: refine for best grasping
+            X_WG_postpick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 2 * piece_heights['king']])
+            X_WG_prepick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + piece_heights['king']])
+            X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1]) # refine for best grasping
 
             # Trajectories
             moves_db[iiwa_instance][src_sq] = {'pick': None, 'post_pick': None, 'home': None, 'place': None}
@@ -164,19 +172,27 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                 print('KTO failed: ', e)
 
             # Pick
-            try:
-                plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
-                to_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_pick], knots_only=True)
-                moves_db[iiwa_instance][src_sq]['to_pick'] = to_pick_knots
-            except Exception as e:
-                print('KTO failed: ', e) # need to for the from
-                continue
-            try:
-                plant.SetPositions(plant_context, iiwa_model, to_pick_knots[-1]) # set to pick
-                from_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_postpick], knots_only=True)
-                moves_db[iiwa_instance][src_sq]['from_pick'] = from_pick_knots
-            except Exception as e:
-                print('KTO failed: ', e)
+            moves_db[iiwa_instance][src_sq]['to_pick'] = {}
+            moves_db[iiwa_instance][src_sq]['from_pick'] = {}
+            for piece, height in piece_heights.items():
+                try:
+                    plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
+
+                    # Move to piece height
+                    pick_xyz = X_WG_pick.translation()
+                    X_WG_piece_pick = RigidTransform(X_WG_pick.rotation(), [pick_xyz[0], pick_xyz[1], pick_xyz[2] + height - 0.005])
+
+                    to_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_piece_pick], knots_only=True)
+                    moves_db[iiwa_instance][src_sq]['to_pick'][piece] = to_pick_knots
+                except Exception as e:
+                    print('KTO failed: ', e) # need to for the from
+                    continue
+                try:
+                    plant.SetPositions(plant_context, iiwa_model, to_pick_knots[-1]) # set to pick
+                    from_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_postpick], knots_only=True)
+                    moves_db[iiwa_instance][src_sq]['from_pick'][piece] = from_pick_knots
+                except Exception as e:
+                    print('KTO failed: ', e)
 
             # Post-pick to post-place
             moves_db[iiwa_instance][src_sq]['to_place'] = {}
@@ -188,7 +204,7 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                 # Construct the poses
                 X_WG_place_base = game.square_to_pose(dest_sq)
                 place_base_xyz = X_WG_place_base.translation()
-                X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2*0.076])
+                X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2 * piece_heights['king']])
 
                 # Build the trajectory
                 try:
