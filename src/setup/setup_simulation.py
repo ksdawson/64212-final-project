@@ -1,5 +1,7 @@
 import os
 import pickle
+from game.utils import Game
+from setup.utils import get_xy_offsets
 
 # Base string containing the IIWAs, table, and chessboard
 # Table math: set at 0.01 -> 0.01 (floor height) - -0.012721 (chess obj base) = 0.022721
@@ -158,64 +160,58 @@ piece_scenario_str = '''- add_model:
         file: file://{PATH}
         default_free_body_pose:
             link:
-                translation: [{X}, {Y}, 0.427262]
+                translation: [{X}, {Y}, 0.390591]
                 rotation: !Rpy {{ deg: [90, 0, 0] }}'''
 
 def get_pieces_poses():
-    # Piece poses
-    e7_x, e7_y = -0.155, -0.4225
-    sq_size = 0.047
-    piece_poses = {}
+    game = Game()
+    piece_poses = {'dark': {}, 'light': {}}
 
-    # Add pawns
-    piece_poses['dark'] = {}
+    # Get offsets
+    offsets = get_xy_offsets()
+
+    # Pawns
     piece_poses['dark']['pawn'] = {}
-    for p in range(-3, 5):
-        p7_x, p7_y = e7_x + p * sq_size, e7_y
-        piece_poses['dark']['pawn'][p+3] = p7_x, p7_y
-    piece_poses['light'] = {}
     piece_poses['light']['pawn'] = {}
-    for p in range(-3, 5):
-        p2_x, p2_y = e7_x + p * sq_size, e7_y + 2.125 * sq_size
-        piece_poses['light']['pawn'][p+3] = p2_x, p2_y
+    for file_idx in range(8):
+        file = chr(ord('a') + file_idx)
+        # Dark pawns (rank 7)
+        pos = game.square_to_pose(f'{file}7').translation()[:2]
+        piece_poses['dark']['pawn'][file_idx] = (float(pos[0]) + offsets['dark']['pawn'][0], float(pos[1]) + offsets['dark']['pawn'][1])
+        # Light pawns (rank 2)
+        pos = game.square_to_pose(f'{file}2').translation()[:2]
+        piece_poses['light']['pawn'][file_idx] = (float(pos[0]) + offsets['light']['pawn'][0], float(pos[1]) + offsets['light']['pawn'][1])
 
-    # Add kings
-    piece_poses['dark']['king'] = {0: (e7_x + 1.4 * sq_size, e7_y + 0.5 * sq_size)}
-    piece_poses['light']['king'] = {0: (e7_x + 1.4 * sq_size, e7_y + 5.25 * sq_size)}
+    # Kings
+    for color, square in [('dark', 'e8'), ('light', 'e1')]:
+        pos = game.square_to_pose(square).translation()[:2]
+        piece_poses[color]['king'] = {0: (float(pos[0]) + offsets[color]['king'][0], float(pos[1]) + offsets[color]['king'][1])}
 
-    # Add queens
-    piece_poses['dark']['queen'] = {0: (e7_x + 3.35 * sq_size, e7_y + 0.5 * sq_size)}
-    piece_poses['light']['queen'] = {0: (e7_x + 3.35 * sq_size, e7_y + 5.25 * sq_size)}
+    # Queens
+    for color, square in [('dark', 'd8'), ('light', 'd1')]:
+        pos = game.square_to_pose(square).translation()[:2]
+        piece_poses[color]['queen'] = {0: (float(pos[0]) + offsets[color]['queen'][0], float(pos[1]) + offsets[color]['queen'][1])}
 
-    # Add bishops
-    piece_poses['dark']['bishop'] = {
-        0: (e7_x + 5.25 * sq_size, e7_y + 0.5 * sq_size),
-        1: (e7_x + 2.25 * sq_size, e7_y + 0.5 * sq_size)
-    }
-    piece_poses['light']['bishop'] = {
-        0: (e7_x + 5.25 * sq_size, e7_y + 5.25 * sq_size),
-        1: (e7_x + 2.25 * sq_size, e7_y + 5.25 * sq_size)
-    }
+    # Bishops
+    for color, squares in [('dark',  ['c8', 'f8']), ('light', ['c1', 'f1'])]:
+        piece_poses[color]['bishop'] = {}
+        for idx, sq in enumerate(squares):
+            pos = game.square_to_pose(sq).translation()[:2]
+            piece_poses[color]['bishop'][idx] = (float(pos[0]) + offsets[color]['bishop'][0], float(pos[1]) + offsets[color]['bishop'][1])
 
-    # Add knights
-    piece_poses['dark']['knight'] = {
-        0: (e7_x + 7.125 * sq_size, e7_y + 0.5 * sq_size),
-        1: (e7_x + 2.125 * sq_size, e7_y + 0.5 * sq_size),
-    }
-    piece_poses['light']['knight'] = {
-        0: (e7_x + 7.125 * sq_size, e7_y + 5.25 * sq_size),
-        1: (e7_x + 2.125 * sq_size, e7_y + 5.25 * sq_size),
-    }
+    # Knights
+    for color, squares in [('dark',  ['b8', 'g8']), ('light', ['b1', 'g1'])]:
+        piece_poses[color]['knight'] = {}
+        for idx, sq in enumerate(squares):
+            pos = game.square_to_pose(sq).translation()[:2]
+            piece_poses[color]['knight'][idx] = (float(pos[0]) + offsets[color]['knight'][0], float(pos[1]) + offsets[color]['knight'][1])
 
-    # Add rooks
-    piece_poses['dark']['rook'] = {
-        0: (e7_x + 9 * sq_size, e7_y + 0.5 * sq_size),
-        1: (e7_x + 2 * sq_size, e7_y + 0.5 * sq_size)
-    }
-    piece_poses['light']['rook'] = {
-        0: (e7_x + 9 * sq_size, e7_y + 5.25 * sq_size),
-        1: (e7_x + 2 * sq_size, e7_y + 5.25 * sq_size)
-    }
+    # Rooks
+    for color, squares in [('dark',  ['a8', 'h8']), ('light', ['a1', 'h1'])]:
+        piece_poses[color]['rook'] = {}
+        for idx, sq in enumerate(squares):
+            pos = game.square_to_pose(sq).translation()[:2]
+            piece_poses[color]['rook'][idx] = (float(pos[0]) + offsets[color]['rook'][0], float(pos[1]) + offsets[color]['rook'][1])
 
     return piece_poses
 
