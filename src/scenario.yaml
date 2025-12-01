@@ -361,5 +361,5 @@ model_drivers:
     wsg2: !SchunkWsgDriver {}
     default: !ZeroForceDriver {}
 visualization:
-    publish_contacts: true
-    publish_proximity: true
+    publish_contacts: false
+    publish_proximity: false

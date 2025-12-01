@@ -14,14 +14,7 @@ def trajectory(q_knots, t = 5):
 
     # x = f(t)
     x_lst = q_knots.T
-    # equal time spacing
-    t_lst = np.linspace(0, t, len(q_knots))
-
-    # time spacing based on knot distance
-    # dist = np.linalg.norm(np.diff(q_knots, axis=0), axis=1)
-    # dist = np.maximum(dist, 1e-8) # avoid division by zero
-    # durations = dist / dist.sum() * t
-    # t_lst = np.concatenate([[0], np.cumsum(durations)])
+    t_lst = np.linspace(0, t, len(q_knots)) # equal time spacing
 
     # Build a 1D cubic spline
     if len(q_knots) >= 3:

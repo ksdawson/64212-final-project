@@ -101,36 +101,42 @@ class Controller:
         print('Gripper opened')
 
         # home -> post-pick -> pre-pick -> pick
-        self.move(iiwa_instance, traj=pick_traj['to_post_pick'])
-        self.move(iiwa_instance, traj=pick_traj['to_pick'])
+        self.move(iiwa_instance, traj=pick_traj['to_post_pick'], traj_t=1.0)
+        self.move(iiwa_instance, traj=pick_traj['to_pick'], traj_t=0.5)
         print('Home to pick')
+
+        # wait to make pick more stable
+        self.advance(0.5)
 
         # close gripper
         self.close_gripper(iiwa_instance)
         print('Gripper closed')
 
         # pick -> pre-pick -> post-pick
-        self.move(iiwa_instance, traj=pick_traj['from_pick'])
+        self.move(iiwa_instance, traj=pick_traj['from_pick'], traj_t=0.5)
         print('Pick to post pick')
 
         # post-pick -> post-place -> pre-place -> place
-        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq])
-        self.move(iiwa_instance, traj=place_traj['to_pick'])
+        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=0.5)
+        self.move(iiwa_instance, traj=place_traj['to_pick'], traj_t=0.5)
         print('Post pick to place')
+
+        # wait to make place more stable
+        self.advance(0.5)
 
         # open gripper
         self.open_gripper(iiwa_instance)
         print('Gripper opened')
 
         # place -> pre-place -> post-place
-        self.move(iiwa_instance, traj=place_traj['from_pick'])
+        self.move(iiwa_instance, traj=place_traj['from_pick'], traj_t=0.5)
 
         # close gripper
         self.close_gripper(iiwa_instance)
         print('Gripper closed')
 
         # post-place -> home
-        self.move(iiwa_instance, traj=place_traj['from_post_pick'])
+        self.move(iiwa_instance, traj=place_traj['from_post_pick'], traj_t=1.0)
         
     def control_loop(self, simulator):
         # Called once every simulation step

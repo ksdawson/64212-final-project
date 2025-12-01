@@ -16,12 +16,14 @@ def get_trajs_from_db():
             trajs[iiwa_instance][move] = {}
             for traj_type, traj_knots in knots.items():
                 if traj_type == 'to_place':
-                    traj = {sq: trajectory(sq_knots) for sq, sq_knots in traj_knots.items()} if traj_knots is not None else None
+                    traj_t = 0.5
+                    traj = {sq: trajectory(sq_knots, t=traj_t) for sq, sq_knots in traj_knots.items()} if traj_knots is not None else None
                 else:
                     if traj_type in ('to_post_pick', 'from_post_pick'):
-                        traj_t = 2.5
+                        # Speed doesn't matter since not holding a piece or near pieces but should be reasonable
+                        traj_t = 1.0
                     else:
-                        traj_t = 5.0 # TODO: can this be shorter?
+                        traj_t = 0.5
                     traj = trajectory(traj_knots, t=traj_t) if traj_knots is not None else None
                 trajs[iiwa_instance][move][traj_type] = traj
 

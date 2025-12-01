@@ -148,8 +148,8 @@ model_drivers:
     wsg2: !SchunkWsgDriver {{}}
     default: !ZeroForceDriver {{}}
 visualization:
-    publish_contacts: true
-    publish_proximity: true
+    publish_contacts: false
+    publish_proximity: false
 '''
 # String format for chess pieces
 # Piece height: 0.527262 - 0.1 = 0.427262
