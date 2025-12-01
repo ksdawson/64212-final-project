@@ -33,7 +33,7 @@ directives:
         parent: world
         child: iiwa::iiwa_link_0
         X_PC:
-            translation: [0, {BASE_DIST}, 0.25]
+            translation: [0, {BASE_DIST}, 0.35]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg
@@ -177,6 +177,9 @@ def main():
         print(f'Score: {score}')
         params = {k:round(float(v),4) for k,v in result['params'].items()}
         print('Params: ', params)
+
+        # Store results
+        params['score'] = score
         results[iiwa_instance] = params
 
     # Store results

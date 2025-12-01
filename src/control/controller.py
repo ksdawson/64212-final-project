@@ -32,8 +32,10 @@ class Controller:
         self.game = Game()
         self.traj_db = get_trajs_from_db()
         self.piece_widths = {
-            'K': 0.02863,
-            'Q': 0.02863,
+            # 'K': 0.02863,
+            # 'Q': 0.02863,
+            'K': 0.02750, # maybe go smaller
+            'Q': 0.02750,
             'B': 0.02417,
             'N': 0.02665,
             'R': 0.02552,
@@ -107,7 +109,7 @@ class Controller:
         place_traj = self.traj_db[iiwa_instance][place_sq]
 
         # Open gripper
-        self.open_gripper(iiwa_instance, grip + 0.001) # add 1mm for clearance
+        self.open_gripper(iiwa_instance, grip) # could add 1mm (0.001) for clearance
 
         # Move home -> post-pick -> pre-pick -> pick
         self.move(iiwa_instance, traj=pick_traj['to_post_pick'], traj_t=1.0)
