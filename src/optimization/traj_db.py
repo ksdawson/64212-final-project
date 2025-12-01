@@ -153,7 +153,7 @@ def create_traj_db(iiwa1_config, iiwa2_config):
             X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1]) # refine for best grasping
 
             # Trajectories
-            moves_db[iiwa_instance][src_sq] = {'pick': None, 'post_pick': None, 'home': None, 'place': None}
+            moves_db[iiwa_instance][src_sq] = {'to_post_pick': None, 'from_post_pick': None, 'to_pick': None, 'from_pick': None, 'to_place': None}
 
             # Post-pick
             try:

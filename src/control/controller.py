@@ -100,14 +100,14 @@ class Controller:
     def chess_move(self, iiwa_instance, move):
         # Get trajectories
         piece = self.game.get_piece_at(move.from_square)
-        grip = self.piece_widths[piece.upper()] + 0.001 # add 1mm for clearance
+        grip = self.piece_widths[piece.upper()]
         pick_sq = chess.square_name(move.from_square)
         place_sq = chess.square_name(move.to_square)
         pick_traj = self.traj_db[iiwa_instance][pick_sq]
         place_traj = self.traj_db[iiwa_instance][place_sq]
 
         # Open gripper
-        self.open_gripper(iiwa_instance, grip)
+        self.open_gripper(iiwa_instance, grip + 0.001) # add 1mm for clearance
 
         # Move home -> post-pick -> pre-pick -> pick
         self.move(iiwa_instance, traj=pick_traj['to_post_pick'], traj_t=1.0)
@@ -125,7 +125,7 @@ class Controller:
         self.advance(0.2)
 
         # Move post-pick -> post-place -> pre-place -> place
-        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=0.5)
+        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=1.0)
 
         self.advance(0.2)
 
