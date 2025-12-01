@@ -31,6 +31,9 @@ class Game:
 
     def is_capture_move(self, move):
         return self.board.is_capture(move)
+    
+    def is_castling_move(self, move):
+        return self.board.is_castling(move)
 
     def get_piece_at(self, square):
         piece = self.board.piece_at(square)

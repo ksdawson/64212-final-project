@@ -145,25 +145,79 @@ class Controller:
         # Move post-place -> home
         self.move(iiwa_instance, traj=place_traj['from_post_pick'], traj_t=1.0)
         
-    def control_loop(self):
-        # Called once every simulation step
+    def chess_remove_piece(self, iiwa_instance, move):
+        # Get trajectories
+        piece = self.game.get_piece_at(move.to_square)
+        grip = self.piece_widths[piece.upper()]
+        place_sq = chess.square_name(move.to_square)
+        place_traj = self.traj_db[iiwa_instance][place_sq]
 
+        # Open gripper
+        self.open_gripper(iiwa_instance, grip + 0.001)
+
+        # Move home -> post-place -> pre-place -> place
+        self.move(iiwa_instance, traj=place_traj['to_post_pick'], traj_t=1.0)
+        self.move(iiwa_instance, traj=place_traj['to_pick'][piece.upper()], traj_t=0.5)
+
+        self.advance(0.1)
+
+        # Close gripper
+        self.close_gripper(iiwa_instance)
+
+        # Move place -> pre-place -> post-place
+        self.move(iiwa_instance, traj=place_traj['from_pick'][piece.upper()], traj_t=0.5)
+
+        self.advance(0.1)
+
+        # Move post-place -> home
+        self.move(iiwa_instance, traj=place_traj['from_post_pick'], traj_t=1.0)
+
+        # Open gripper
+        self.open_gripper(iiwa_instance, grip)
+
+        # Close gripper
+        self.close_gripper(iiwa_instance)
+
+    def chess_capture_move(self, iiwa_instance, move):
+        # Remove captured piece first
+        # For now just throw the piece away
+        self.chess_remove_piece(iiwa_instance, move)
+
+        # Then normal pick/place chess move
+        self.chess_move(iiwa_instance, move)
+
+    def chess_castling_move(self, iiwa_instance, move):
+        # King squares
+        king_from = move.from_square
+        king_to = move.to_square
+
+        # Determine rook squares
+        if king_to > king_from: # kingside
+            rook_from = king_to + 1 # rook starts 1 square to the right of king's destination
+            rook_to = king_to - 1
+        else: # queenside
+            rook_from = king_to - 2 # rook starts 2 squares to the left of king's destination
+            rook_to = king_to + 1
+
+        # Construct king move
+        king_move = chess.Move(king_from, king_to)
+        self.chess_move(iiwa_instance, king_move)
+
+        # Construct rook move
+        rook_move = chess.Move(rook_from, rook_to)
+        self.chess_move(iiwa_instance, rook_move)
+
+    def control_loop(self, move):
         # Get which iiwa to move
         iiwa_instance = self.game.get_turn()
-        
-        # Get a move
-        # move = self.game.get_move()
-        move = self.game.get_non_capture_move()
-        if move is None:
-            # Game over
-            return True
 
         # Make move in simulation
-        if self.game.is_capture_move(move):
-            # TODO: Remove piece first
-            # For now just end
-            return
-        self.chess_move(iiwa_instance, move)
+        if self.game.is_castling_move(move):
+            self.chess_castling_move(iiwa_instance, move)
+        elif self.game.is_capture_move(move):
+            self.chess_capture_move(iiwa_instance, move)
+        else:
+            self.chess_move(iiwa_instance, move)
 
         # Make move in game
         self.game.make_move(move)
@@ -173,10 +227,22 @@ class Controller:
 
         # # Check board state
         # self.game.check_game_state(piece_poses)
-
-        return False
     
-    def run_game(self):
-        game_over = False
-        while not game_over:
-            game_over = self.control_loop()
+    def run_game(self, moves=None):
+        move_idx = 0
+        while True:
+            # Get move
+            if moves is None:
+                move = self.game.get_move()
+                if move is None:
+                    # Game over
+                    return
+            else:
+                if move_idx >= len(moves):
+                    # Game over
+                    return
+                move = moves[move_idx]
+                move_idx += 1
+
+            # Game step
+            self.control_loop(move)
