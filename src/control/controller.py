@@ -105,9 +105,17 @@ class Controller:
         self.move(iiwa_instance, traj=pick_traj['post_pick'])
         print('Pick to post pick')
 
+        # post-pick -> post-place -> pre-place -> place
+        self.move(iiwa_instance, traj=pick_traj['place'][place_sq])
+        print('Post pick to place')
+
+        # open gripper
+        self.open_gripper(iiwa_instance)
+        print('Gripper opened')
+
         # post-pick -> home
-        self.move(iiwa_instance, traj=pick_traj['home'])
-        print('Post pick to home')
+        # self.move(iiwa_instance, traj=pick_traj['home'])
+        # print('Post pick to home')
     
     def chess_move(self, iiwa_instance, move):
         # Get which iiwa to move

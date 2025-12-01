@@ -135,14 +135,14 @@ def create_traj_db(iiwa1_config, iiwa2_config):
         original_q = plant.GetPositions(plant_context, iiwa_model)
         for src_sq in get_squares():
             # Get the base pose
-            X_WG_base = game.square_to_pose(src_sq)
+            X_WG_pick_base = game.square_to_pose(src_sq)
 
             # Construct the poses
             rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
-            base_xyz = X_WG_base.translation()
-            X_WG_postpick = RigidTransform(rpy_down, [base_xyz[0], base_xyz[1], base_xyz[2] + 0.1 + 2*0.076])
-            X_WG_prepick = RigidTransform(rpy_down, [base_xyz[0], base_xyz[1], base_xyz[2] + 0.1 + 0.076])
-            X_WG_pick = RigidTransform(rpy_down, [base_xyz[0], base_xyz[1], base_xyz[2] + 0.1 + 0.076/2])
+            pick_base_xyz = X_WG_pick_base.translation()
+            X_WG_postpick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 2*0.076])
+            X_WG_prepick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076])
+            X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076/2])
 
             # Trajectories
             moves_db[iiwa_instance][src_sq] = {'pick': None, 'post_pick': None, 'home': None, 'place': None}
@@ -175,26 +175,26 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                 print('KTO failed: ', e)
 
             # Post pick to place
-            # moves_db[iiwa_instance][src_sq]['place'] = {}
-            # for dest_sq in get_squares():
-            #     # Skip if the curr sq
-            #     if dest_sq == src_sq:
-            #         continue
+            moves_db[iiwa_instance][src_sq]['place'] = {}
+            for dest_sq in get_squares():
+                # Skip if the curr sq
+                if dest_sq == src_sq:
+                    continue
 
-            #     # Construct the poses
-            #     X_WG_place_base = game.square_to_pose(dest_sq)
-            #     place_base_xyz = X_WG_place_base.translation()
-            #     X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2*0.076])
-            #     X_WG_preplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076])
-            #     X_WG_place = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076/2])
+                # Construct the poses
+                X_WG_place_base = game.square_to_pose(dest_sq)
+                place_base_xyz = X_WG_place_base.translation()
+                X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2*0.076])
+                X_WG_preplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076])
+                X_WG_place = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076/2])
 
-            #     # Build the trajectory
-            #     plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
-            #     try:
-            #         place_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postplace, X_WG_preplace, X_WG_place], knots_only=True)
-            #         moves_db[iiwa_instance][src_sq]['place'][dest_sq] = place_pick_knots
-            #     except Exception as e:
-            #         print('KTO failed: ', e)
+                # Build the trajectory
+                plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
+                try:
+                    place_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postplace, X_WG_preplace, X_WG_place], knots_only=True)
+                    moves_db[iiwa_instance][src_sq]['place'][dest_sq] = place_knots
+                except Exception as e:
+                    print('KTO failed: ', e)
 
     # Pickle the database
     file_path = 'traj_db.pkl'

@@ -13,11 +13,12 @@ def get_trajs_from_db():
     for iiwa_instance in data:
         trajs[iiwa_instance] = {}
         for move, knots in data[iiwa_instance].items():
-            pick_knots, post_pick_knots, home_knots = knots['pick'], knots['post_pick'], knots['home']
+            pick_knots, post_pick_knots, home_knots, place_knots = knots['pick'], knots['post_pick'], knots['home'], knots['place']
             pick_traj = trajectory(pick_knots) if pick_knots is not None else None
             postpick_traj = trajectory(post_pick_knots) if post_pick_knots is not None else None
             home_traj = trajectory(home_knots) if home_knots is not None else None
-            trajs[iiwa_instance][move] = {'pick': pick_traj, 'post_pick': postpick_traj, 'home': home_traj}
+            place_traj = {sq: trajectory(sq_knots) for sq, sq_knots in place_knots.items()} if place_knots is not None else None
+            trajs[iiwa_instance][move] = {'pick': pick_traj, 'post_pick': postpick_traj, 'home': home_traj, 'place': place_traj}
 
     return trajs
 
