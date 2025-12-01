@@ -1,12 +1,13 @@
 import numpy as np
 from pydrake.all import LeafSystem, BasicVector
-from motion.kinematics import kinematic_traj_op_per_pose, kinematic_traj_op
+from motion.kinematics import kinematic_traj_op_per_pose
 
 class TrajectoryController(LeafSystem):
     def __init__(self, iiwa_instance, plant):
         super().__init__()
         self._iiwa_instance = iiwa_instance
         self._traj = None
+        self._traj_start_time = None
         self._plant = plant
         self._plant_context = plant.CreateDefaultContext()
 
@@ -20,24 +21,21 @@ class TrajectoryController(LeafSystem):
         X_WStart = self._plant.EvalBodyPoseInWorld(self._plant_context, self._plant.GetBodyByName('body'))
         return X_WStart
 
-    def SetTrajectory(self, traj):
+    def SetTrajectory(self, traj, start_time):
         self._traj = traj
+        self._traj_start_time = start_time
 
-    def NextTrajectory(self, poses=None, times=None, orientation_config=None, traj_t=5.0):
+    def NextTrajectory(self, poses, start_time, traj_t=5.0):
         # If no poses then hold at pose
         if poses is None:
-            self.SetTrajectory(None)
+            self.SetTrajectory(None, None)
 
         # Get iiwa joint positions interpolated along the trajectory
-        if poses:
-            assert len(poses) >= 2, 'Need at least 2 poses'
-            q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, orientation_config, traj_t)
-            # q_traj = kinematic_traj_op(self._plant, self._plant_context, poses, times, traj_t)
-        else:
-            raise Exception('Poses unspecified')
+        assert isinstance(poses, list) and len(poses) > 0, 'Poses unspecified'
+        q_traj = kinematic_traj_op_per_pose(self._plant, self._plant_context, poses, traj_t)
 
         # Command the traj to the controller
-        self.SetTrajectory(q_traj)
+        self.SetTrajectory(q_traj, start_time)
 
     def CalcOutput(self, context, output):
         # Get current positions
@@ -53,8 +51,8 @@ class TrajectoryController(LeafSystem):
             return
 
         # Clamp to end time (i.e. hold final configuration)
-        t = context.get_time()
-        t_eval = min(t, self._traj.end_time())
+        t = context.get_time() - self._traj_start_time
+        t_eval = np.clip(t, 0, self._traj.end_time())
 
         # Command joint positions at this time step
         q = self._traj.value(t_eval).reshape(-1)

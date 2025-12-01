@@ -49,32 +49,39 @@ class Controller:
 
         return formatted_piece_poses
     
-    def move(self, iiwa_instance, poses=None, times=None, traj=None, traj_t=5.0):
-        # Get which iiwa to move
+    def advance(self, t):
+        # Advance simulator
+        self.time += t
+        self.simulator.AdvanceTo(self.time)
+
+    def get_traj_controller(self, iiwa_instance):
         iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
+        return iiwa_traj_controller
+    
+    def get_grasp_controller(self, iiwa_instance):
+        iiwa_grasp_controller = self.iiwa1_grasp_controller if iiwa_instance == 1 else self.iiwa2_grasp_controller
+        return iiwa_grasp_controller
+    
+    def move(self, iiwa_instance, poses=None, traj=None, traj_t=5.0):
+        # Get which iiwa to move
+        iiwa_traj_controller = self.get_traj_controller(iiwa_instance)
 
         # Advance trajectory
         if poses is not None:
-            iiwa_traj_controller.NextTrajectory(poses=poses, times=times, traj_t=traj_t)
+            iiwa_traj_controller.NextTrajectory(poses, self.time, traj_t=traj_t)
         elif traj is not None:
-            iiwa_traj_controller.SetTrajectory(traj)
+            iiwa_traj_controller.SetTrajectory(traj, self.time)
         else:
             raise Exception('Must specify poses or trajectory')
+        self.advance(traj_t)
 
-        # Advance simulator
-        self.time += traj_t
-        self.simulator.AdvanceTo(self.time)
-
-    def grip(self, iiwa_instance, grip, traj_t=1.0):
+    def grip(self, iiwa_instance, grip, grasp_t=0.1):
         # Get which iiwa to move
-        iiwa_grasp_controller = self.iiwa1_grasp_controller if iiwa_instance == 1 else self.iiwa2_grasp_controller
+        iiwa_grasp_controller = self.get_grasp_controller(iiwa_instance)
 
         # Set gripper
         iiwa_grasp_controller.SetGripper(grip)
-
-        # Advance simulator
-        self.time += traj_t
-        self.simulator.AdvanceTo(self.time)
+        self.advance(grasp_t)
 
     def open_gripper(self, iiwa_instance):
         self.grip(iiwa_instance, 0.025) # width of chess piece
@@ -82,7 +89,7 @@ class Controller:
     def close_gripper(self, iiwa_instance):
         self.grip(iiwa_instance, 0.0) # max force
 
-    def NEW_chess_move(self, iiwa_instance, move):
+    def chess_move(self, iiwa_instance, move):
         # Get trajectories
         pick_sq = chess.square_name(move.from_square)
         place_sq = chess.square_name(move.to_square)
@@ -94,7 +101,8 @@ class Controller:
         print('Gripper opened')
 
         # home -> post-pick -> pre-pick -> pick
-        self.move(iiwa_instance, traj=pick_traj['pick'])
+        self.move(iiwa_instance, traj=pick_traj['to_post_pick'])
+        self.move(iiwa_instance, traj=pick_traj['to_pick'])
         print('Home to pick')
 
         # close gripper
@@ -102,77 +110,27 @@ class Controller:
         print('Gripper closed')
 
         # pick -> pre-pick -> post-pick
-        self.move(iiwa_instance, traj=pick_traj['post_pick'])
+        self.move(iiwa_instance, traj=pick_traj['from_pick'])
         print('Pick to post pick')
 
         # post-pick -> post-place -> pre-place -> place
-        self.move(iiwa_instance, traj=pick_traj['place'][place_sq])
+        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq])
+        self.move(iiwa_instance, traj=place_traj['to_pick'])
         print('Post pick to place')
 
         # open gripper
         self.open_gripper(iiwa_instance)
         print('Gripper opened')
 
-        # post-pick -> home
-        # self.move(iiwa_instance, traj=pick_traj['home'])
-        # print('Post pick to home')
-    
-    def chess_move(self, iiwa_instance, move):
-        # Get which iiwa to move
-        iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
-        iiwa_X_WG_home = self.iiwa1_X_WG_home if iiwa_instance == 1 else self.iiwa2_X_WG_home
+        # place -> pre-place -> post-place
+        self.move(iiwa_instance, traj=place_traj['from_pick'])
 
-        # Get end poses
-        X_WG_start = iiwa_traj_controller.get_current_pose()
-        X_WG_pick = self.game.square_to_pose(chess.square_name(move.from_square))
-        X_WG_place = self.game.square_to_pose(chess.square_name(move.to_square))
-
-        # Get intermediate poses
-        rpy_down = RotationMatrix(RollPitchYaw(-np.pi/2, 0, 0)) # gripper pointing down
-        pick_xyz = X_WG_pick.translation()
-        X_WG_prepick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 0.076]) # offset to gripper origin is 0.1, max piece height is 0.076
-        X_WG_postpick = RigidTransform(rpy_down, [pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.1 + 2*0.076])
-        place_xyz = X_WG_place.translation()
-        X_WG_preplace = RigidTransform(rpy_down, [place_xyz[0], place_xyz[1], place_xyz[2] + 0.1 + 0.076])
-
-        # Adjust end poses
-        X_WG_pick.set_rotation(rpy_down)
-        X_WG_pick.set_translation([pick_xyz[0], pick_xyz[1], pick_xyz[2] + 0.125]) # midpoint is 0.025 (grasp at midpoint for better stability)
-        X_WG_place.set_rotation(rpy_down)
-        X_WG_place.set_translation([place_xyz[0], place_xyz[1], place_xyz[2] + 0.125])
-
-        # Go home if not at home
-        if not poses_equal(X_WG_start, iiwa_X_WG_home):
-            print('Moving home')
-            self.move(iiwa_instance, poses=[X_WG_start, iiwa_X_WG_home], times=[0.0, 1.0])
-        print('Home')
-
-        # Open gripper
-        self.open_gripper(iiwa_instance)
-        print('Gripper opened')
-
-        # Go to pre-pick -> pick
-        self.move(iiwa_instance, poses=[X_WG_prepick, X_WG_pick])
-        print('Pre-pick to pick')
-
-        # Close gripper
+        # close gripper
         self.close_gripper(iiwa_instance)
         print('Gripper closed')
 
-        # Go to pre-pick -> home
-        self.move(iiwa_instance, poses=[X_WG_postpick, X_WG_start])
-        print('Post-pick to home')
-
-        # Go to pre-place -> place
-        self.move(iiwa_instance, poses=[X_WG_preplace, X_WG_place])
-        print('Pre-place to place')
-
-        # Open gripper
-        self.open_gripper(iiwa_instance)
-        print('Gripper opened')
-
-        # Go to pre-place -> home
-        print('Pre-place to home')
+        # post-place -> home
+        self.move(iiwa_instance, traj=place_traj['from_post_pick'])
         
     def control_loop(self, simulator):
         # Called once every simulation step
@@ -185,7 +143,7 @@ class Controller:
         
         # Make move
         # self.chess_move(iiwa_instance, move)
-        self.NEW_chess_move(iiwa_instance, move)
+        self.chess_move(iiwa_instance, move)
         
         # # Run perception pipeline
         # piece_poses = self.get_piece_poses()
@@ -201,89 +159,3 @@ class Controller:
         #     # TODO: Remove piece first
         #     # For now just end
         #     return
-        
-        # # Get start pose
-        # from_square = move.from_square
-        # from_square_name = chess.square_name(from_square)
-        # piece = self.game.get_piece_at(from_square)
-        # # start_poses = piece_poses[piece]
-        # X_WG_pick = self.game.square_to_pose(from_square_name)
-
-        # # Get goal pose
-        # to_square = move.to_square
-        # to_square_name = chess.square_name(to_square)
-        # X_WG_place = self.game.square_to_pose(to_square_name)
-
-        # # Get which iiwa to move
-        # iiwa_instance = self.game.get_turn()
-        # iiwa_traj_controller = self.iiwa1_traj_controller if iiwa_instance == 1 else self.iiwa2_traj_controller
-        # iiwa_grasp_controller = self.iiwa1_grasp_controller if iiwa_instance == 1 else self.iiwa2_grasp_controller
-
-        # # Move to pick pose through a pre-pick pose
-        # rpy_down = RollPitchYaw(-np.pi/2, 0, 0)
-        # xyz = X_WG_pick.translation()
-        # X_WG_prepick = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
-
-        # # Grasp: pick piece up at midpoint for better stability
-        # X_WG_pick.set_rotation(RotationMatrix(rpy_down))
-        # X_WG_pick.set_translation([xyz[0], xyz[1], xyz[2] + 0.1 + 0.025]) # offset is 0.1, midpoint is 0.025
-        # # TODO: play w/ midpoint
-
-        # # Open gripper
-        # iiwa_grasp_controller.SetGripper(0.025)
-
-        # # Advance simulator
-        # self.time += 1.0
-        # simulator.AdvanceTo(self.time)
-
-        # # Axis-aligned orientation constraint
-        # gripper_approach = [0, 1, 0] # gripper +y axis (approach axis)
-        # world_axis = [0, 0, -1] # world downward direction (-z)
-        # orientation_config = {'type': 'axis', 'gripper_axis': gripper_approach, 'world_axis': world_axis}
-
-        # # Move to pre-pick -> pick
-        # X_WStart = iiwa_traj_controller.get_current_pose()
-        # # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], traj_t=5.0)
-        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick, X_WG_pick], orientation_config=orientation_config, traj_t=5.0)
-
-        # # Advance simulator
-        # self.time += 5.0
-        # simulator.AdvanceTo(self.time)
-
-        # # Close gripper
-        # iiwa_grasp_controller.SetGripper(0.0) # max force
-
-        # # Advance simulator
-        # self.time += 1.0
-        # simulator.AdvanceTo(self.time)
-
-        # # Move to pre-pick
-        # X_WStart = iiwa_traj_controller.get_current_pose()
-        # # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], traj_t=5.0)
-        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_prepick], orientation_config=orientation_config, traj_t=5.0)
-
-        # # Advance simulator
-        # self.time += 5.0
-        # simulator.AdvanceTo(self.time)
-
-        # # Move to place pose through a pre-place pose
-        # xyz = X_WG_place.translation()
-        # X_WG_preplace = RigidTransform(RotationMatrix(rpy_down), [xyz[0], xyz[1], xyz[2] + 0.175]) # offset is 0.1, max piece height is 0.075
-        # X_WG_place.set_rotation(RotationMatrix(rpy_down))
-        # X_WG_place.set_translation([xyz[0], xyz[1], xyz[2] + 0.1 + 0.025]) # offset is 0.1, midpoint is 0.025
-
-        # # Move to pre-place -> place
-        # X_WStart = iiwa_traj_controller.get_current_pose()
-        # # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], traj_t=5.0)
-        # iiwa_traj_controller.NextTrajectory(poses=[X_WStart, X_WG_preplace, X_WG_place], orientation_config=orientation_config, traj_t=5.0)
-
-        # # Advance simulator
-        # self.time += 5.0
-        # simulator.AdvanceTo(self.time)
-
-        # # Open gripper
-        # iiwa_grasp_controller.SetGripper(0.025)
-
-        # # Advance simulator
-        # self.time += 1.0
-        # simulator.AdvanceTo(self.time)

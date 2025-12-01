@@ -1,10 +1,7 @@
 import numpy as np
 from pydrake.all import (
     RotationMatrix,
-    Solve,
-    PositionConstraint,
-    OrientationConstraint,
-    AngleBetweenVectorsConstraint
+    Solve
 )
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.planning import KinematicTrajectoryOptimization
@@ -17,10 +14,22 @@ def trajectory(q_knots, t = 5):
 
     # x = f(t)
     x_lst = q_knots.T
-    t_lst = np.linspace(0, t, len(q_knots)) # pose samples over t seconds
+    # equal time spacing
+    t_lst = np.linspace(0, t, len(q_knots))
+
+    # time spacing based on knot distance
+    # dist = np.linalg.norm(np.diff(q_knots, axis=0), axis=1)
+    # dist = np.maximum(dist, 1e-8) # avoid division by zero
+    # durations = dist / dist.sum() * t
+    # t_lst = np.concatenate([[0], np.cumsum(durations)])
 
     # Build a 1D cubic spline
-    q_traj = PiecewisePolynomial.CubicShapePreserving(t_lst, x_lst)
+    if len(q_knots) >= 3:
+        q_traj = PiecewisePolynomial.CubicShapePreserving(t_lst, x_lst)
+    elif len(q_knots) == 2:
+        q_traj = PiecewisePolynomial.CubicShapePreserving(t_lst, x_lst, zero_end_point_derivatives=True)
+    else:
+        raise Exception('Need at least 2 knots for trajectory')
 
     return q_traj
 

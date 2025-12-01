@@ -142,40 +142,44 @@ def create_traj_db(iiwa1_config, iiwa2_config):
             pick_base_xyz = X_WG_pick_base.translation()
             X_WG_postpick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 2*0.076])
             X_WG_prepick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076])
-            X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076/2])
+            X_WG_pick = RigidTransform(rpy_down, [pick_base_xyz[0], pick_base_xyz[1], pick_base_xyz[2] + 0.1 + 0.076/2]) # TODO: refine for best grasping
 
             # Trajectories
             moves_db[iiwa_instance][src_sq] = {'pick': None, 'post_pick': None, 'home': None, 'place': None}
-            
-            # Pick
-            plant.SetPositions(plant_context, iiwa_model, original_q) # set to home
+
+            # Post-pick
             try:
                 # Only get the knots bc can't pickle trajectories
-                pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick, X_WG_prepick, X_WG_pick], knots_only=True)
-                moves_db[iiwa_instance][src_sq]['pick'] = pick_knots
+                plant.SetPositions(plant_context, iiwa_model, original_q) # set to home
+                to_post_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick], knots_only=True)
+                moves_db[iiwa_instance][src_sq]['to_post_pick'] = to_post_pick_knots
             except Exception as e:
                 print('KTO failed: ', e)
-                continue
-            
-            # Post pick
-            plant.SetPositions(plant_context, iiwa_model, pick_knots[-1]) # set to pick
+                continue # need to for the from
             try:
-                post_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_postpick], knots_only=True)
-                moves_db[iiwa_instance][src_sq]['post_pick'] = post_pick_knots
-            except Exception as e:
-                print('KTO failed: ', e)
-                continue
-
-            # Home
-            plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
-            try:
-                home_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick, X_WG_home], knots_only=True)
-                moves_db[iiwa_instance][src_sq]['home'] = home_knots
+                plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
+                from_post_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_home], knots_only=True)
+                moves_db[iiwa_instance][src_sq]['from_post_pick'] = from_post_pick_knots
             except Exception as e:
                 print('KTO failed: ', e)
 
-            # Post pick to place
-            moves_db[iiwa_instance][src_sq]['place'] = {}
+            # Pick
+            try:
+                plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
+                to_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_pick], knots_only=True)
+                moves_db[iiwa_instance][src_sq]['to_pick'] = to_pick_knots
+            except Exception as e:
+                print('KTO failed: ', e) # need to for the from
+                continue
+            try:
+                plant.SetPositions(plant_context, iiwa_model, to_pick_knots[-1]) # set to pick
+                from_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_postpick], knots_only=True)
+                moves_db[iiwa_instance][src_sq]['from_pick'] = from_pick_knots
+            except Exception as e:
+                print('KTO failed: ', e)
+
+            # Post-pick to post-place
+            moves_db[iiwa_instance][src_sq]['to_place'] = {}
             for dest_sq in get_squares():
                 # Skip if the curr sq
                 if dest_sq == src_sq:
@@ -185,16 +189,65 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                 X_WG_place_base = game.square_to_pose(dest_sq)
                 place_base_xyz = X_WG_place_base.translation()
                 X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2*0.076])
-                X_WG_preplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076])
-                X_WG_place = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076/2])
 
                 # Build the trajectory
-                plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
                 try:
-                    place_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postplace, X_WG_preplace, X_WG_place], knots_only=True)
-                    moves_db[iiwa_instance][src_sq]['place'][dest_sq] = place_knots
+                    plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
+                    to_post_place_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postplace], knots_only=True)
+                    moves_db[iiwa_instance][src_sq]['to_place'][dest_sq] = to_post_place_knots
                 except Exception as e:
                     print('KTO failed: ', e)
+
+            ##################
+            
+            # # Pick
+            # plant.SetPositions(plant_context, iiwa_model, original_q) # set to home
+            # try:
+            #     # Only get the knots bc can't pickle trajectories
+            #     pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick, X_WG_prepick, X_WG_pick], knots_only=True)
+            #     moves_db[iiwa_instance][src_sq]['pick'] = pick_knots
+            # except Exception as e:
+            #     print('KTO failed: ', e)
+            #     continue
+            
+            # # Post pick
+            # plant.SetPositions(plant_context, iiwa_model, pick_knots[-1]) # set to pick
+            # try:
+            #     post_pick_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_prepick, X_WG_postpick], knots_only=True)
+            #     moves_db[iiwa_instance][src_sq]['post_pick'] = post_pick_knots
+            # except Exception as e:
+            #     print('KTO failed: ', e)
+            #     continue
+
+            # # Home
+            # plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
+            # try:
+            #     home_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postpick, X_WG_home], knots_only=True)
+            #     moves_db[iiwa_instance][src_sq]['home'] = home_knots
+            # except Exception as e:
+            #     print('KTO failed: ', e)
+
+            # # Post pick to place
+            # moves_db[iiwa_instance][src_sq]['place'] = {}
+            # for dest_sq in get_squares():
+            #     # Skip if the curr sq
+            #     if dest_sq == src_sq:
+            #         continue
+
+            #     # Construct the poses
+            #     X_WG_place_base = game.square_to_pose(dest_sq)
+            #     place_base_xyz = X_WG_place_base.translation()
+            #     X_WG_postplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 2*0.076])
+            #     X_WG_preplace = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076])
+            #     X_WG_place = RigidTransform(rpy_down, [place_base_xyz[0], place_base_xyz[1], place_base_xyz[2] + 0.1 + 0.076/2])
+
+            #     # Build the trajectory
+            #     plant.SetPositions(plant_context, iiwa_model, post_pick_knots[-1]) # set to post-pick
+            #     try:
+            #         place_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_postplace, X_WG_preplace, X_WG_place], knots_only=True)
+            #         moves_db[iiwa_instance][src_sq]['place'][dest_sq] = place_knots
+            #     except Exception as e:
+            #         print('KTO failed: ', e)
 
     # Pickle the database
     file_path = 'traj_db.pkl'
