@@ -26,7 +26,7 @@ class Game:
         self.piece_size = 0.028626
 
     def get_turn(self):
-        return 2 if self.board.turn == chess.WHITE else 1
+        return 1 if self.board.turn == chess.WHITE else 2
 
     def is_capture_move(self, move):
         return self.board.is_capture(move)

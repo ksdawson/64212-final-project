@@ -10,25 +10,6 @@ from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.planning import KinematicTrajectoryOptimization
 from pydrake.trajectories import PiecewisePolynomial
 
-def reverse_traj(traj):
-    # Original time span
-    t_start = traj.start_time()
-    t_end = traj.end_time()
-    
-    # Sample the trajectory at the original knot times
-    t_knots = traj.get_segment_times()
-    q_knots = np.column_stack([traj.value(t) for t in t_knots])
-    
-    # Reverse the knot order
-    q_knots_rev = q_knots[:, ::-1]
-    
-    # Create new times that go forward but map reversed poses
-    t_new = np.linspace(t_start, t_end, len(t_knots))
-    
-    # Build new trajectory
-    traj_rev = PiecewisePolynomial.CubicShapePreserving(t_new, q_knots_rev)
-    return traj_rev
-
 def trajectory(q_knots, t = 5):
     # Spline: piecewise polynomial function
     # Knot: points where piecewise polynomial curves join together
@@ -159,55 +140,34 @@ def kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, pose_lst, or
     q_traj = trajectory(q_knots_iiwa, t=traj_t)
     return q_traj
 
-def kinematic_traj_op(plant, plant_context, poses, times, traj_t, pos_tol=0.001, rot_tol=0.01):
+def kinematic_traj_op(iiwa_instance, plant, plant_context, poses, times, traj_t=5.0, pos_tol=0.001, rot_tol=0.01, knots_only=False):
     # Create a KTO
     num_q = plant.num_positions()
     trajopt = KinematicTrajectoryOptimization(num_q, 15)
     prog = trajopt.get_mutable_prog()
 
-    # Get frames
-    world_frame = plant.world_frame()
-    gripper_frame = plant.GetFrameByName('body')
-
     # Create position/orientation constraints at the poses
+    q_nominal = plant.GetPositions(plant_context)
     for s, pose in zip(times, poses):
-        pos_const = PositionConstraint(
-            plant,
-            world_frame,
-            pose.translation() - np.full(3, pos_tol),
-            pose.translation() + np.full(3, pos_tol),
-            gripper_frame,
-            [0, 0, 0], # gripper origin
-            plant_context
-        )
-        orient_const = OrientationConstraint(
-            plant,
-            world_frame,
-            RotationMatrix(),
-            gripper_frame,
-            pose.rotation(),
-            rot_tol*np.pi,
-            plant_context
-        )
-        # orient_const = AngleBetweenVectorsConstraint(
-        #     plant,
-        #     gripper_frame,
-        #     [0, 1, 0],
-        #     world_frame,
-        #     [0, 0, -1],
-        #     0.0,
-        #     rot_tol*np.pi,
-        #     plant_context
-        # )
+        # Solve IK for joint configuration at time s
+        q = inverse_kinematics(iiwa_instance, plant, plant_context, pose, q_nominal=q_nominal, pos_tol=pos_tol, rot_tol=rot_tol)
 
         # Add constraints as path position constraints
-        trajopt.AddPathPositionConstraint(pos_const, s=s)
-        trajopt.AddPathPositionConstraint(orient_const, s=s)
+        trajopt.AddPathPositionConstraint(lb=q, ub=q, s=s)
+
+        # Set q nominal for the next IK
+        q_nominal = q
 
     # Add position and velocity bounds to ensure the traj sol respects the hardware's limits
     pos_lower, pos_upper = plant.GetPositionLowerLimits(), plant.GetPositionUpperLimits()
     vel_lower, vel_upper = plant.GetVelocityLowerLimits(), plant.GetVelocityUpperLimits()
-    pos_lower[7:], pos_upper[7:], vel_lower[7:], vel_upper[7:] = 0.0, 0.0, 0.0, 0.0 # exclude gripper
+    if q_nominal.shape[0] > 9:
+        # two iiwas
+        pos_lower[7:9], pos_upper[7:9], vel_lower[7:9], vel_upper[7:9] = 0.0, 0.0, 0.0, 0.0 # exclude gripper
+        pos_lower[16:], pos_upper[16:], vel_lower[16:], vel_upper[16:] = 0.0, 0.0, 0.0, 0.0
+    else:
+        # one iiwa
+        pos_lower[7:], pos_upper[7:], vel_lower[7:], vel_upper[7:] = 0.0, 0.0, 0.0, 0.0
     trajopt.AddPositionBounds(pos_lower, pos_upper)
     trajopt.AddVelocityBounds(vel_lower, vel_upper)
 
@@ -238,8 +198,15 @@ def kinematic_traj_op(plant, plant_context, poses, times, traj_t, pos_tol=0.001,
     q_knots = np.array(traj.control_points())
     q_knots = np.squeeze(q_knots, axis=2)
 
-    # Exclude gripper joints
-    q_knots_iiwa = q_knots[:, 0:7]
+    # Exclude gripper joints and other iiwa
+    if q_knots.shape[1] > 9:
+        # two iiwas
+        q_knots_iiwa = q_knots[:, 0:7] if iiwa_instance == 1 else q_knots[:, 9:16]
+    else:
+        # one iiwa
+        q_knots_iiwa = q_knots[:, 0:7]
+    if knots_only:
+        return q_knots_iiwa
 
     # Build trajectory from joint positions
     q_traj = trajectory(q_knots_iiwa, t=traj_t)

@@ -115,9 +115,9 @@ def compute_ee_positions_along_trajectory(iiwa_instance, plant, context, traj, t
         plant.SetPositions(context, plant_q)
 
         # Compute forward kinematics
-        X_WE = plant.EvalBodyPoseInWorld(context, plant.GetBodyByName('body', plant.GetModelInstanceByName(f'wsg{iiwa_instance}')))
+        X_WG = plant.EvalBodyPoseInWorld(context, plant.GetBodyByName('body', plant.GetModelInstanceByName(f'wsg{iiwa_instance}')))
 
         # Extract translation
-        p_WE = X_WE.translation()
-        positions.append(p_WE.copy())
+        p_WG = X_WG.translation()
+        positions.append(p_WG.copy())
     return positions

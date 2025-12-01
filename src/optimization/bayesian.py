@@ -33,7 +33,7 @@ directives:
         parent: world
         child: iiwa::iiwa_link_0
         X_PC:
-            translation: [0, {BASE_DIST}, 0.23]
+            translation: [0, {BASE_DIST}, 0.25]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg
@@ -54,12 +54,12 @@ directives:
             translation: [0.0, 0.0, -0.087279]
     - add_model:
         name: chessboard
-        file: file:///workspaces/code/src/assets/chess/chessboard/model.sdf
+        file: file:///workspaces/code/src/optimization/box.sdf
     - add_weld:
         parent: table::link
         child: chessboard::link
         X_PC:
-            translation: [0.0, 0.0, 0.478391]
+            translation: [0.0, 0.0, 0.507579]
 '''
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
@@ -163,7 +163,7 @@ def main():
 
     # Run bayesian optimization to find best starting configuration for each iiwa
     results = {}
-    for i, base_dist in enumerate([(0.55, 1.0), (-1.0, -0.55)]):
+    for i, base_dist in enumerate([(0.6, 1.0), (-1.0, -0.6)]):
         iiwa_instance = i + 1
         pbounds['base_dist'] = base_dist
         start = time.time()

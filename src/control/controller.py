@@ -3,7 +3,6 @@ import numpy as np
 from pydrake.all import RigidTransform, RollPitchYaw, RotationMatrix
 from perception.perception import perception
 from perception.point_cloud import get_oriented_piece_model_pcs
-from motion.kinematics import reverse_traj
 from game.utils import Game
 from utils import poses_equal
 from control.utils import get_trajs_from_db
@@ -90,21 +89,33 @@ class Controller:
         pick_traj = self.traj_db[iiwa_instance][pick_sq]
         place_traj = self.traj_db[iiwa_instance][place_sq]
 
-        # Open gripper
+        # open gripper
         self.open_gripper(iiwa_instance)
         print('Gripper opened')
 
-        # Go to pre-pick -> pick
-        self.move(iiwa_instance, traj=pick_traj['to'])
+        # home -> pre-pick -> pick
+        self.move(iiwa_instance, traj=pick_traj['pick'])
         print('Pre-pick to pick')
 
-        # Close gripper
+        # close gripper
         self.close_gripper(iiwa_instance)
         print('Gripper closed')
 
-        # Go to post-pick -> home
-        self.move(iiwa_instance, traj=pick_traj['from'])
-        print('Post-pick to home')
+        # pick -> post-pick -> home
+        self.move(iiwa_instance, traj=pick_traj['post_pick'])
+        print('Pick to post pick')
+
+        # # home -> pre-place -> place
+        # self.move(iiwa_instance, traj=place_traj['to'])
+        # print('Pre-place to place')
+
+        # # open gripper
+        # self.open_gripper(iiwa_instance)
+        # print('Gripper opened')
+
+        # # place -> post-place -> home
+        # self.move(iiwa_instance, traj=place_traj['from'])
+        # print('Post-place to home')
     
     def chess_move(self, iiwa_instance, move):
         # Get which iiwa to move
@@ -149,7 +160,6 @@ class Controller:
         print('Gripper closed')
 
         # Go to pre-pick -> home
-        # self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
         self.move(iiwa_instance, poses=[X_WG_postpick, X_WG_start])
         print('Post-pick to home')
 
@@ -162,7 +172,6 @@ class Controller:
         print('Gripper opened')
 
         # Go to pre-place -> home
-        self.move(iiwa_instance, traj=reverse_traj(iiwa_traj_controller._traj)) # just reverse the previous traj
         print('Pre-place to home')
         
     def control_loop(self, simulator):
