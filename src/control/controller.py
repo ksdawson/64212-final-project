@@ -114,7 +114,7 @@ class Controller:
         self.move(iiwa_instance, traj=pick_traj['to_pick'][piece.upper()], traj_t=0.5)
 
         # Wait to make pick more stable
-        self.advance(0.2)
+        self.advance(0.1)
 
         # Close gripper
         self.close_gripper(iiwa_instance)
@@ -122,16 +122,16 @@ class Controller:
         # Move pick -> pre-pick -> post-pick
         self.move(iiwa_instance, traj=pick_traj['from_pick'][piece.upper()], traj_t=0.5)
 
-        self.advance(0.2)
+        self.advance(0.1)
 
         # Move post-pick -> post-place -> pre-place -> place
-        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=1.0)
+        self.move(iiwa_instance, traj=pick_traj['to_place'][place_sq], traj_t=0.75)
 
-        self.advance(0.2)
+        self.advance(0.1)
 
         self.move(iiwa_instance, traj=place_traj['to_pick'][piece.upper()], traj_t=0.5)
 
-        self.advance(0.2)
+        self.advance(0.1)
 
         # Open gripper
         self.open_gripper(iiwa_instance, grip)

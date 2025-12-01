@@ -8,7 +8,7 @@ base_sdf_string = '''<?xml version="1.0"?>
     <pose>0 0 0 0 0 0</pose>
     <link name="link">
       <inertial>
-        <pose>{X_OFFSET} {Y_OFFSET} {Z_OFFSET} 0 0 0</pose>
+        <pose>{X_OFFSET} {Y_OFFSET_COM} {Z_OFFSET} 0 0 0</pose>
         <mass>{MASS}</mass>
         <inertia>
           <ixx>{IXX}</ixx>
@@ -92,6 +92,10 @@ def main():
             y_offset /= scaling_factor
             z_offset /= scaling_factor
 
+            # Lower z com: com at the origin makes the piece act like a pendulum when grasping from above
+            # Realistic because piece is heavier at the bottom
+            y_offset_com = y_offset - 0.25 * y # move from 0.5y to 0.25y
+
             # Scale mesh to same size as collision box
             scale = 1/scaling_factor
             scale_x, scale_y, scale_z = scale, scale, scale
@@ -107,7 +111,7 @@ def main():
             sdf_string = base_sdf_string.format(NAME=name,
               MASS=m, IXX=ixx, IYY=iyy, IZZ=izz,
               X=x, Y=y, Z=z,
-              X_OFFSET=x_offset, Y_OFFSET=y_offset, Z_OFFSET=z_offset,
+              X_OFFSET=x_offset, Y_OFFSET=y_offset, Z_OFFSET=z_offset, Y_OFFSET_COM=y_offset_com,
               SCALE_X=scale_x, SCALE_Y=scale_y, SCALE_Z=scale_z
             )
 

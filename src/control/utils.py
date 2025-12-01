@@ -22,7 +22,7 @@ def get_trajs_from_db():
                 if traj_type in ('to_place', 'to_pick', 'from_pick'):
                     if traj_type == 'to_place':
                         # Slow down during transfer to reduce torque due to gravity that tilts the piece
-                        traj_t = 1.0
+                        traj_t = 0.75
                     else:
                         traj_t = 0.5
                     traj = {lst_name(lst, traj_type): trajectory(lst_knots, t=traj_t) for lst, lst_knots in traj_knots.items()} if traj_knots is not None else None
