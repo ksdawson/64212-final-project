@@ -31,6 +31,14 @@ class Controller:
         # Create game
         self.game = Game()
         self.traj_db = get_trajs_from_db()
+        self.piece_widths = {
+            'K': 0.02863,
+            'Q': 0.02863,
+            'B': 0.02417,
+            'N': 0.02665,
+            'R': 0.02552,
+            'P': 0.02726
+        }
 
     def get_piece_poses(self):
         # Run perception pipeline
@@ -83,8 +91,8 @@ class Controller:
         iiwa_grasp_controller.SetGripper(grip)
         self.advance(grasp_t)
 
-    def open_gripper(self, iiwa_instance):
-        self.grip(iiwa_instance, 0.025) # width of chess piece
+    def open_gripper(self, iiwa_instance, grip=0.025):
+        self.grip(iiwa_instance, grip) # width of chess piece
 
     def close_gripper(self, iiwa_instance):
         self.grip(iiwa_instance, 0.0) # max force
@@ -92,13 +100,14 @@ class Controller:
     def chess_move(self, iiwa_instance, move):
         # Get trajectories
         piece = self.game.get_piece_at(move.from_square)
+        grip = self.piece_widths[piece.upper()] + 0.001 # add 1mm for clearance
         pick_sq = chess.square_name(move.from_square)
         place_sq = chess.square_name(move.to_square)
         pick_traj = self.traj_db[iiwa_instance][pick_sq]
         place_traj = self.traj_db[iiwa_instance][place_sq]
 
         # Open gripper
-        self.open_gripper(iiwa_instance)
+        self.open_gripper(iiwa_instance, grip)
 
         # Move home -> post-pick -> pre-pick -> pick
         self.move(iiwa_instance, traj=pick_traj['to_post_pick'], traj_t=1.0)
@@ -125,7 +134,7 @@ class Controller:
         self.advance(0.2)
 
         # Open gripper
-        self.open_gripper(iiwa_instance)
+        self.open_gripper(iiwa_instance, grip)
 
         # Move place -> pre-place -> post-place
         self.move(iiwa_instance, traj=place_traj['from_pick'][piece.upper()], traj_t=0.5)
