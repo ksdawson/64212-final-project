@@ -34,8 +34,8 @@ class Controller:
         self.piece_widths = {
             # 'K': 0.02863,
             # 'Q': 0.02863,
-            'K': 0.02750, # maybe go smaller
-            'Q': 0.02750,
+            'K': 0.02740, # maybe go smaller
+            'Q': 0.02740,
             'B': 0.02417,
             'N': 0.02665,
             'R': 0.02552,
