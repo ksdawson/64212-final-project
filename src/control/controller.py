@@ -180,10 +180,49 @@ class Controller:
         # Close gripper
         self.close_gripper(iiwa_instance)
 
+    def NEW_chess_remove_piece(self, iiwa_instance, move):
+        # Get trajectories
+        piece = self.game.get_piece_at(move.to_square)
+        grip = self.piece_widths[piece.upper()]
+        place_sq = chess.square_name(move.to_square)
+        place_traj = self.traj_db[iiwa_instance][place_sq]
+
+        # Open gripper
+        self.open_gripper(iiwa_instance, grip + 0.001)
+
+        # Move home -> post-place -> pre-place -> place
+        self.move(iiwa_instance, traj=place_traj['to_post_pick'], traj_t=1.0)
+        self.move(iiwa_instance, traj=place_traj['to_pick'][piece.upper()], traj_t=0.5)
+
+        self.advance(0.1)
+
+        # Close gripper
+        self.close_gripper(iiwa_instance)
+
+        # Move place -> pre-place -> post-place
+        self.move(iiwa_instance, traj=place_traj['from_pick'][piece.upper()], traj_t=0.5)
+
+        self.advance(0.1)
+
+        # Move post-place -> capture
+        capture_idx = self.game.get_num_captured(iiwa_instance)
+        self.move(iiwa_instance, traj=place_traj['to_capture'][capture_idx], traj_t=0.5)
+
+        self.advance(0.1)
+
+        # Open gripper
+        self.open_gripper(iiwa_instance, grip)
+
+        # Move capture -> home
+        self.move(iiwa_instance, traj=place_traj['from_capture'][capture_idx], traj_t=0.5)
+
+        # Close gripper
+        self.close_gripper(iiwa_instance)
+
     def chess_capture_move(self, iiwa_instance, move):
         # Remove captured piece first
         # For now just throw the piece away
-        self.chess_remove_piece(iiwa_instance, move)
+        self.NEW_chess_remove_piece(iiwa_instance, move)
 
         # Then normal pick/place chess move
         self.chess_move(iiwa_instance, move)

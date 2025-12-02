@@ -30,6 +30,9 @@ def get_trajs_from_db():
                     # Speed doesn't matter since not holding a piece or near pieces but should be reasonable
                     traj_t = 1.0
                     traj = trajectory(traj_knots, t=traj_t) if traj_knots is not None else None
+                elif traj_type in ('to_capture', 'from_capture'):
+                    traj_t = 0.5
+                    traj = [trajectory(lst_knots, t=traj_t) if lst_knots is not None else None for lst_knots in traj_knots] if traj_knots is not None else None
                 else:
                     traj = None
                 trajs[iiwa_instance][move][traj_type] = traj
@@ -37,4 +40,5 @@ def get_trajs_from_db():
     return trajs
 
 if __name__ == '__main__':
-    get_trajs_from_db()
+    result = get_trajs_from_db()
+    print(result[1]['c6']['to_capture'], result[1]['c6']['from_capture'])

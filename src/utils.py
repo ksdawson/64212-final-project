@@ -1,5 +1,9 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import chess
+import chess.svg
+import cairosvg
+import io
 from pydrake.all import (
     Rgba, RigidTransform, Box, PointCloud, Sphere
 )
@@ -121,3 +125,27 @@ def compute_ee_positions_along_trajectory(iiwa_instance, plant, context, traj, t
         p_WG = X_WG.translation()
         positions.append(p_WG.copy())
     return positions
+
+######################################################################
+# Render functions
+######################################################################
+
+def show_chess_board(board, file_path):
+    # Get SVG from python-chess
+    svg_data = chess.svg.board(board=board)
+
+    # Convert SVG to PNG bytes
+    png_bytes = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
+
+    # Open as PIL image
+    img = Image.open(io.BytesIO(png_bytes))
+
+    # Save
+    img.save(file_path)
+
+if __name__ == '__main__':
+    # Example images
+    board = chess.Board()
+    show_chess_board(board, 'start.png')
+    board.push_san('e4')
+    show_chess_board(board, 'e4.png')

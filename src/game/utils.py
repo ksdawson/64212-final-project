@@ -37,7 +37,22 @@ class Game:
 
     def get_piece_at(self, square):
         piece = self.board.piece_at(square)
-        return piece.symbol()
+        if piece:
+            return piece.symbol()
+        return None
+    
+    def get_num_captured(self, player):
+        is_opp = (lambda x: x.islower()) if player == 1 else (lambda x: x.isupper())
+        num_captured = 16
+        for file_idx in range(ord('a'), ord('h') + 1):
+            file = chr(file_idx)
+            for rank_idx in range(1, 9):
+                rank = str(rank_idx)
+                sq = file + rank
+                piece = self.get_piece_at(chess.parse_square(sq))
+                if piece is not None and is_opp(piece):
+                    num_captured -= 1
+        return num_captured
     
     def get_move(self):
         # Returns a random legal move

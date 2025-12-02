@@ -31,7 +31,7 @@ directives:
         parent: world
         child: iiwa1::iiwa_link_0
         X_PC:
-            translation: [0, {IIWA1_BASE_DIST}, 0.35]
+            translation: [0, {IIWA1_BASE_DIST}, 0.25]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg1
@@ -57,7 +57,7 @@ directives:
         parent: world
         child: iiwa2::iiwa_link_0
         X_PC:
-            translation: [0, {IIWA2_BASE_DIST}, 0.35]
+            translation: [0, {IIWA2_BASE_DIST}, 0.25]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg2
@@ -215,36 +215,42 @@ def create_traj_db(iiwa1_config, iiwa2_config):
                     print('to_place KTO failed: ', e)
 
             # Post-pick to capture
+            moves_db[iiwa_instance][src_sq]['to_capture'] = [None] * 16
+            moves_db[iiwa_instance][src_sq]['from_capture'] = [None] * 16
             idx = 0
-            for sq in get_squares():
-                if sq[1] not in ('1', '2', '7', '8'):
-                    continue
 
-                # Construct the poses
-                X_WG_capture_base = game.square_to_pose(sq)
-                capture_base_xyz = X_WG_capture_base.translation()
-                y_offset = 0.047 * 3 * (1 if iiwa_instance == 1 else -1) # move 3 squares away from board
-                X_WG_precapture = RigidTransform(rpy_down, [capture_base_xyz[0], capture_base_xyz[1] + y_offset, capture_base_xyz[2] + 0.1 + 2 * piece_heights['king']])
-                X_WG_capture = RigidTransform(rpy_down, [capture_base_xyz[0], capture_base_xyz[1] + y_offset, capture_base_xyz[2] + piece_heights['king'] - 0.005])
+            # a/h sides (8 slots)
+            rank_range = (1, 4) if iiwa_instance == 1 else (5, 8)
+            for file, offset in (('a', 1), ('h', -1)):
+                for rank in range(rank_range[0], rank_range[1] + 1):
+                    sq = file + str(rank)
 
-                # Build the trajectory
-                try:
-                    plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
-                    to_capture_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_precapture, X_WG_capture], knots_only=True)
-                    moves_db[iiwa_instance][src_sq]['to_capture'][idx] = to_capture_knots
-                except Exception as e:
-                    print('to_capture KTO failed: ', e)
+                    # Construct the poses
+                    X_WG_capture_base = game.square_to_pose(sq)
+                    capture_base_xyz = X_WG_capture_base.translation()
+                    x_offset = offset * 0.047 * 2 # move 2 squares away from board
+                    X_WG_precapture = RigidTransform(rpy_down, [capture_base_xyz[0] + x_offset, capture_base_xyz[1], capture_base_xyz[2] + 0.1 + 2 * piece_heights['king'] - 0.015]) # subtract chessboard
+                    X_WG_capture = RigidTransform(rpy_down, [capture_base_xyz[0] + x_offset, capture_base_xyz[1], capture_base_xyz[2] + 0.1 + piece_heights['king'] - 0.015])
+
+                    # Build the trajectory
+                    try:
+                        plant.SetPositions(plant_context, iiwa_model, to_post_pick_knots[-1]) # set to post-pick
+                        to_capture_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_precapture, X_WG_capture], knots_only=True)
+                        moves_db[iiwa_instance][src_sq]['to_capture'][idx] = to_capture_knots
+                    except Exception as e:
+                        print('to_capture KTO failed: ', e)
+                        idx += 1
+                        continue
+
+                    try:
+                        plant.SetPositions(plant_context, iiwa_model, to_capture_knots[-1]) # set to post-capture
+                        from_capture_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_precapture, X_WG_home], knots_only=True)
+                        moves_db[iiwa_instance][src_sq]['from_capture'][idx] = from_capture_knots
+                    except Exception as e:
+                        print('from_capture KTO failed: ', e)
                     idx += 1
-                    continue
 
-                try:
-                    plant.SetPositions(plant_context, iiwa_model, to_capture_knots[-1]) # set to post-capture
-                    from_capture_knots = kinematic_traj_op_per_pose(iiwa_instance, plant, plant_context, [X_WG_precapture, X_WG_home], knots_only=True)
-                    moves_db[iiwa_instance][src_sq]['from_capture'][idx] = from_capture_knots
-                except Exception as e:
-                    print('from_capture KTO failed: ', e)
-
-                idx += 1
+            # TODO: top/bottom (8 slots)
 
     # Pickle the database
     file_path = 'traj_db.pkl'

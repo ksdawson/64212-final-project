@@ -33,7 +33,7 @@ directives:
         parent: world
         child: iiwa::iiwa_link_0
         X_PC:
-            translation: [0, {BASE_DIST}, 0.35]
+            translation: [0, {BASE_DIST}, 0.25]
             rotation: !Rpy {{ deg: [0, 0, 0] }}
     - add_model:
         name: wsg
@@ -60,7 +60,7 @@ directives:
         child: chessboard::link
         X_PC:
             translation: [0.0, 0.0, 0.507579]
-'''
+''' # height of 0.35 gets it working for all squares
 
 def setup_station(base_dist, j1, j2, j3, j4, j5, j6, j7):
     # Create scenario
